@@ -1,13 +1,14 @@
 package fr.romitou.balkourabattle.tasks;
 
 import fr.romitou.balkourabattle.BattleHandler;
-import fr.romitou.balkourabattle.utils.JsonRequest;
-import fr.romitou.balkourabattle.utils.MatchUtils;
-import fr.romitou.balkourabattle.utils.ParticipantCheckType;
+import fr.romitou.balkourabattle.utils.*;
+import fr.romitou.balkourabattle.utils.Json.Match;
+import fr.romitou.balkourabattle.utils.Json.Participant;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.json.simple.JSONObject;
 
+import java.io.IOException;
 import java.lang.reflect.MalformedParametersException;
 
 public class CheckParticipantMatch extends BukkitRunnable {
@@ -24,11 +25,24 @@ public class CheckParticipantMatch extends BukkitRunnable {
     public void run() {
         Integer playerId = BattleHandler.getPlayers().inverse().get(player.getName());
         assert playerId != null;
-        JSONObject participant = JsonRequest.getJsonRequest("/participants/" + playerId);
-        Integer matchId = (Integer) participant.get("id");
-        assert matchId != null;
-        JSONObject match = JsonRequest.getJsonRequest("/matches/" + matchId);
-        Player[] players = MatchUtils.getPlayers(match);
+
+        Participant participant = null;
+        Match match = null;
+        Player[] players = null;
+        try {
+            /*
+            JSONObject participant = JsonRequest.getJsonRequest("/participants/" + playerId);
+            Integer matchId = (Integer) participant.get("id");
+            assert matchId != null;
+            JSONObject match = JsonRequest.getJsonRequest("/matches/" + matchId);
+            */
+            participant = new API_Participants().getParticipant(playerId);
+            match = new API_Matchs().getMatch(participant.getId());
+            //player = MatchUtils.getPlayers(match);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        /*
         switch (checkType) {
             case DISCONNECTED:
                 if (players[0].getName().equals(player.getName()))
@@ -44,5 +58,6 @@ public class CheckParticipantMatch extends BukkitRunnable {
             default:
                 throw new MalformedParametersException();
         }
+        */
     }
 }

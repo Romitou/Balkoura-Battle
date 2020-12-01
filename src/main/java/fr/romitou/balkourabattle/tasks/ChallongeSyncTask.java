@@ -1,6 +1,6 @@
 package fr.romitou.balkourabattle.tasks;
 
-import com.google.api.client.util.ArrayMap;
+//import com.google.api.client.util.ArrayMap;
 import fr.romitou.balkourabattle.BalkouraBattle;
 import fr.romitou.balkourabattle.BattleHandler;
 import fr.romitou.balkourabattle.utils.ArenaUtils;
@@ -14,8 +14,9 @@ import org.json.simple.JSONArray;
 import java.math.BigDecimal;
 import java.util.concurrent.CompletableFuture;
 
-public class ChallongeSyncTask extends BukkitRunnable {
+public class ChallongeSyncTask /*extends BukkitRunnable*/ {
 
+    /*
     @Override
     @SuppressWarnings("unchecked")
     public void run() {
@@ -40,4 +41,5 @@ public class ChallongeSyncTask extends BukkitRunnable {
             new EndMatchTimer(matchId, players[0], players[1], 30).runTaskTimerAsynchronously(BalkouraBattle.getInstance(), 0, 1000);
         });
     }
+    */
 }

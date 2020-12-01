@@ -6,6 +6,6 @@ import org.bukkit.scheduler.BukkitRunnable;
 public class StartTournament extends BukkitRunnable {
     @Override
     public void run() {
-        JsonRequest.postJsonRequest("/start");
+        //JsonRequest.postJsonRequest("/start");
     }
 }

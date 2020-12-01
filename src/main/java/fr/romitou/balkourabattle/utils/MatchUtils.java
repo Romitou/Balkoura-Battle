@@ -1,6 +1,6 @@
 package fr.romitou.balkourabattle.utils;
 
-import com.google.api.client.util.ArrayMap;
+//import com.google.api.client.util.ArrayMap;
 import fr.romitou.balkourabattle.BattleHandler;
 import org.bukkit.entity.Player;
 import org.json.simple.JSONObject;
@@ -31,6 +31,7 @@ public class MatchUtils {
      * @param match The ArrayMap of the match.
      * @return An Player array.
      */
+    /*
     public static Player[] getPlayers(ArrayMap<?, ?> match) {
         Integer firstId = ((BigDecimal) match.get("player1_id")).intValueExact();
         Integer secondId = ((BigDecimal) match.get("player2_id")).intValueExact();
@@ -39,6 +40,7 @@ public class MatchUtils {
                 BattleHandler.getPlayer(secondId)
         };
     }
+    */
 
     /**
      * This method is useful to retrieve the ID of a match.

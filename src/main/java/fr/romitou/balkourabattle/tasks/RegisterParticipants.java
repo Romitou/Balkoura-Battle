@@ -1,6 +1,6 @@
 package fr.romitou.balkourabattle.tasks;
 
-import com.google.api.client.util.ArrayMap;
+//import com.google.api.client.util.ArrayMap;
 import fr.romitou.balkourabattle.BattleHandler;
 import fr.romitou.balkourabattle.utils.ChatUtils;
 import fr.romitou.balkourabattle.utils.JsonRequest;
@@ -29,7 +29,8 @@ public class RegisterParticipants extends BukkitRunnable {
                 return;
             Map<String, Object> playerData = new HashMap<>();
             playerData.put("name", player.getName());
-            JSONObject data = JsonRequest.postJsonRequest("/participants", playerData);
+            //JSONObject data = JsonRequest.postJsonRequest("/participants", playerData);
+            /*
             assert data != null;
             ArrayMap<?, ?> participant = (ArrayMap<?, ?>) data.get("participant");
             BattleHandler.addPlayer(((BigDecimal) participant.get("id")).intValue(), player.getName());
@@ -38,6 +39,7 @@ public class RegisterParticipants extends BukkitRunnable {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+            */
         });
         ChatUtils.sendMessage(sender, "Les participants suivant ont été inscrits auprès de Challonge :");
         ChatUtils.sendMessage(sender, StringUtils.join(BattleHandler.getPlayers().values(), ", "));

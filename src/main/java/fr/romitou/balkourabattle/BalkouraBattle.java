@@ -25,7 +25,7 @@ public class BalkouraBattle extends JavaPlugin {
         config = this.getConfig();
 
         // -- Tasks and events --
-        new ChallongeSyncTask().runTaskTimerAsynchronously(this, 0, 10000);
+        //new ChallongeSyncTask().runTaskTimerAsynchronously(this, 0, 10000);
         getServer().getPluginManager().registerEvents(new EventListener(), this);
 
         // -- Commands --

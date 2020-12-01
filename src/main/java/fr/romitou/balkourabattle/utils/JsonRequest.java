@@ -1,5 +1,5 @@
 package fr.romitou.balkourabattle.utils;
-
+/*
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpContent;
 import com.google.api.client.http.HttpRequest;
@@ -15,9 +15,9 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
+*/
 public class JsonRequest {
-
+    /*
     private static final String CHALLONGE_URL = BalkouraBattle.getInstance().getConfigFile().getString("challonge.default_endpoint");
     private static final String CHALLONGE_KEY = BalkouraBattle.getInstance().getConfigFile().getString("challonge.key");
     private static final HttpRequestFactory REQUEST_FACTORY = new NetHttpTransport().createRequestFactory();
@@ -78,5 +78,5 @@ public class JsonRequest {
     public static JSONObject putJsonRequest(String endpoint) {
         return putJsonRequest(endpoint, null);
     }
-
+    */
 }
