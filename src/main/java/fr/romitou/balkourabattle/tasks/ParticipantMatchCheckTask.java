@@ -1,48 +1,48 @@
 package fr.romitou.balkourabattle.tasks;
 
+import at.stefangeyer.challonge.exception.DataAccessException;
+import at.stefangeyer.challonge.model.Match;
+import at.stefangeyer.challonge.model.Participant;
 import fr.romitou.balkourabattle.BattleHandler;
-import fr.romitou.balkourabattle.utils.*;
-import fr.romitou.balkourabattle.utils.Json.Match;
-import fr.romitou.balkourabattle.utils.Json.Participant;
+import fr.romitou.balkourabattle.ChallongeManager;
+import fr.romitou.balkourabattle.utils.MatchUtils;
+import fr.romitou.balkourabattle.utils.ParticipantMatchCheckType;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.json.simple.JSONObject;
 
-import java.io.IOException;
 import java.lang.reflect.MalformedParametersException;
 
-public class CheckParticipantMatch extends BukkitRunnable {
+public class ParticipantMatchCheckTask extends BukkitRunnable {
 
     private final Player player;
-    private final ParticipantCheckType checkType;
+    private final ParticipantMatchCheckType checkType;
 
-    public CheckParticipantMatch(Player player, ParticipantCheckType checkType) {
+    public ParticipantMatchCheckTask(Player player, ParticipantMatchCheckType checkType) {
         this.player = player;
         this.checkType = checkType;
     }
 
     @Override
     public void run() {
-        Integer playerId = BattleHandler.getPlayers().inverse().get(player.getName());
-        assert playerId != null;
+        long playerId = BattleHandler.players.inverse().get(player.getName());
 
-        Participant participant = null;
+        Participant participant;
         Match match = null;
         Player[] players = null;
         try {
-            /*
-            JSONObject participant = JsonRequest.getJsonRequest("/participants/" + playerId);
-            Integer matchId = (Integer) participant.get("id");
-            assert matchId != null;
-            JSONObject match = JsonRequest.getJsonRequest("/matches/" + matchId);
-            */
-            participant = new API_Participants().getParticipant(playerId);
-            match = new API_Matchs().getMatch(participant.getId());
-            //player = MatchUtils.getPlayers(match);
-        } catch (IOException e) {
+            participant = ChallongeManager.getChallonge().getParticipant(
+                    ChallongeManager.getTournament(),
+                    playerId
+            );
+            match = ChallongeManager.getChallonge().getMatch(
+                    ChallongeManager.getTournament(),
+                    participant.getId()
+            );
+            players = MatchUtils.getPlayers(match);
+        } catch (DataAccessException e) {
             e.printStackTrace();
         }
-        /*
+        assert players != null;
         switch (checkType) {
             case DISCONNECTED:
                 if (players[0].getName().equals(player.getName()))
@@ -58,6 +58,5 @@ public class CheckParticipantMatch extends BukkitRunnable {
             default:
                 throw new MalformedParametersException();
         }
-        */
     }
 }
