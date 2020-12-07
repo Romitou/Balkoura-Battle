@@ -2,7 +2,7 @@ package fr.romitou.balkourabattle.utils;
 
 import at.stefangeyer.challonge.model.Match;
 import fr.romitou.balkourabattle.BattleHandler;
-import org.bukkit.entity.Player;
+import org.bukkit.OfflinePlayer;
 
 public class MatchUtils {
 
@@ -12,10 +12,10 @@ public class MatchUtils {
      * @param match The JSONObject of the match.
      * @return An Player array.
      */
-    public static Player[] getPlayers(Match match) {
+    public static OfflinePlayer[] getPlayers(Match match) {
         long firstId = match.getPlayer1Id();
         long secondId = match.getPlayer2Id();
-        return new Player[]{
+        return new OfflinePlayer[]{
                 BattleHandler.getPlayer(firstId),
                 BattleHandler.getPlayer(secondId)
         };

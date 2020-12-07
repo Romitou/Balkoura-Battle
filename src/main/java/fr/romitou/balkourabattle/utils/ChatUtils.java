@@ -2,15 +2,26 @@ package fr.romitou.balkourabattle.utils;
 
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 public class ChatUtils {
 
     private final static String PREFIX = "§6[§eBattle§6] §f";
+    private final static String ERROR_PREFIX = "§cErreur: ";
+    private final static String DELIMITER = "§7§m                                                                     ";
+    private final static String[] SPACED_DELIMITER = new String[]{"", DELIMITER, ""};
 
     public static String getFormattedMessage(String... text) {
         return PREFIX + StringUtils.join(text, "");
+    }
+
+    public static void sendBeautifulMessage(OfflinePlayer player, String... strings) {
+        if (!player.isOnline()) return;
+        player.getPlayer().sendMessage(SPACED_DELIMITER);
+        player.getPlayer().sendMessage(strings);
+        player.getPlayer().sendMessage(SPACED_DELIMITER);
     }
 
     /**
@@ -33,6 +44,16 @@ public class ChatUtils {
         player.sendMessage(getFormattedMessage(strings));
     }
 
+    /**
+     * This method is useful to send a pre-formatted message to a player.
+     *
+     * @param player  The player.
+     * @param strings The message.
+     */
+    public static void sendMessage(OfflinePlayer player, String... strings) {
+        if (player.isOnline()) player.getPlayer().sendMessage(getFormattedMessage(strings));
+    }
+
     public static void broadcast(String... strings) {
         // Due to permissions issues, we are forced to do it this way.
         Bukkit.getOnlinePlayers().forEach(player -> player.sendMessage(getFormattedMessage(strings)));
@@ -44,6 +65,11 @@ public class ChatUtils {
 
     public static void broadcastDisconnection(Player player) {
         broadcast("§c[-]§f Au revoir, §e" + player.getName() + "§f.");
+    }
+
+    public static void modAlert(String... strings) {
+        // Bukkit.broadcast(ERROR_PREFIX + StringUtils.join(strings), "modperm");
+        broadcast(ERROR_PREFIX + StringUtils.join(strings));
     }
 
 }

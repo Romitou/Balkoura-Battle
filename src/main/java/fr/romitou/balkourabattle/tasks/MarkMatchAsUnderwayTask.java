@@ -3,6 +3,7 @@ package fr.romitou.balkourabattle.tasks;
 import at.stefangeyer.challonge.exception.DataAccessException;
 import at.stefangeyer.challonge.model.Match;
 import fr.romitou.balkourabattle.ChallongeManager;
+import fr.romitou.balkourabattle.utils.ChatUtils;
 import org.bukkit.scheduler.BukkitRunnable;
 
 public class MarkMatchAsUnderwayTask extends BukkitRunnable {
@@ -19,6 +20,7 @@ public class MarkMatchAsUnderwayTask extends BukkitRunnable {
             ChallongeManager.getChallonge().markMatchAsUnderway(match);
         } catch (DataAccessException e) {
             e.printStackTrace();
+            ChatUtils.modAlert(e.getMessage());
         }
     }
 }

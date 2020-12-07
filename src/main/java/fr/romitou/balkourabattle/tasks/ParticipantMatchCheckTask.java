@@ -5,12 +5,14 @@ import at.stefangeyer.challonge.model.Match;
 import at.stefangeyer.challonge.model.Participant;
 import fr.romitou.balkourabattle.BattleHandler;
 import fr.romitou.balkourabattle.ChallongeManager;
+import fr.romitou.balkourabattle.utils.ChatUtils;
 import fr.romitou.balkourabattle.utils.MatchUtils;
 import fr.romitou.balkourabattle.utils.ParticipantMatchCheckType;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import java.lang.reflect.MalformedParametersException;
+import java.util.Objects;
 
 public class ParticipantMatchCheckTask extends BukkitRunnable {
 
@@ -25,10 +27,10 @@ public class ParticipantMatchCheckTask extends BukkitRunnable {
     @Override
     public void run() {
         long playerId = BattleHandler.players.inverse().get(player.getName());
-
+        System.out.println("playerid:" + playerId);
         Participant participant;
         Match match = null;
-        Player[] players = null;
+        OfflinePlayer[] players = null;
         try {
             participant = ChallongeManager.getChallonge().getParticipant(
                     ChallongeManager.getTournament(),
@@ -36,16 +38,17 @@ public class ParticipantMatchCheckTask extends BukkitRunnable {
             );
             match = ChallongeManager.getChallonge().getMatch(
                     ChallongeManager.getTournament(),
-                    participant.getId()
+                    Long.parseLong(participant.getMisc())
             );
             players = MatchUtils.getPlayers(match);
         } catch (DataAccessException e) {
             e.printStackTrace();
+            ChatUtils.modAlert(e.getMessage());
         }
         assert players != null;
         switch (checkType) {
             case DISCONNECTED:
-                if (players[0].getName().equals(player.getName()))
+                if (Objects.equals(players[0].getName(), player.getName()))
                     BattleHandler.handleDisconnect(match, players[0], players[1]);
                 BattleHandler.handleDisconnect(match, players[1], players[0]);
                 break;
@@ -56,7 +59,7 @@ public class ParticipantMatchCheckTask extends BukkitRunnable {
                 BattleHandler.handleDeath(match, players[0], players[1], player);
                 break;
             default:
-                throw new MalformedParametersException();
+                ChatUtils.modAlert("Invalid check type for player" + player.getName() + ": " + checkType.toString());
         }
     }
 }

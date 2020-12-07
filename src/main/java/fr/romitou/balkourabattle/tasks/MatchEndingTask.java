@@ -6,6 +6,7 @@ import at.stefangeyer.challonge.model.query.MatchQuery;
 import fr.romitou.balkourabattle.BattleHandler;
 import fr.romitou.balkourabattle.ChallongeManager;
 import fr.romitou.balkourabattle.utils.ArenaUtils;
+import fr.romitou.balkourabattle.utils.ChatUtils;
 import fr.romitou.balkourabattle.utils.MatchUtils;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -22,15 +23,16 @@ public class MatchEndingTask extends BukkitRunnable {
     @Override
     public void run() {
         try {
-            ChallongeManager.getChallonge().unmarkMatchAsUnderway(match);
+            Integer[] scores = MatchUtils.getScores(match);
             MatchQuery matchQuery = MatchQuery.builder()
                     .winnerId(winnerId)
-                    .scoresCsv(match.getScoresCsv())
+                    .scoresCsv(scores[0] + "-" + scores[1])
                     .build();
             ChallongeManager.getChallonge().updateMatch(match, matchQuery);
             BattleHandler.arenas.remove(ArenaUtils.getArenaIdByMatchId(match.getId()));
         } catch (DataAccessException e) {
             e.printStackTrace();
+            ChatUtils.modAlert(e.getMessage());
         }
     }
 }

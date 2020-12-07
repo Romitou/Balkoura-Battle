@@ -5,39 +5,40 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import fr.romitou.balkourabattle.tasks.MatchEndingTask;
 import fr.romitou.balkourabattle.tasks.MatchScoreUpdatingTask;
+import fr.romitou.balkourabattle.tasks.ParticipantTeleportingTask;
 import fr.romitou.balkourabattle.utils.ArenaUtils;
 import fr.romitou.balkourabattle.utils.ChatUtils;
 import fr.romitou.balkourabattle.utils.MatchUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.entity.Player;
+import org.bukkit.OfflinePlayer;
 
+import java.util.Arrays;
 import java.util.HashMap;
-import java.util.concurrent.CompletableFuture;
+import java.util.Objects;
 
 public class BattleHandler {
 
     public static final BiMap<Long, String> players = HashBiMap.create();
-    /**
-     * Integer: id of arena
-     * Long: id of match
-     */
     public static final HashMap<Integer, Long> arenas = new HashMap<>();
     public static Integer round = 0;
 
-    public static Player getPlayer(Long id) {
+    @SuppressWarnings("deprecation")
+    public static OfflinePlayer getPlayer(Long id) {
         if (!players.containsKey(id))
             return null;
         String player = players.get(id);
-        return Bukkit.getPlayerExact(player);
+        OfflinePlayer cache = Bukkit.getOfflinePlayerIfCached(player);
+        if (cache != null) return cache;
+        return Bukkit.getOfflinePlayer(player);
     }
 
-    public static void handleDeath(Match match, Player player1, Player player2, Player attacker) {
+    public static void handleDeath(Match match, OfflinePlayer player1, OfflinePlayer player2, OfflinePlayer attacker) {
         Integer[] scores = MatchUtils.getScores(match);
-        if (player1.getName().equals(attacker.getName())) {
+        System.out.println("scores:" + Arrays.toString(scores));
+        if (Objects.equals(player1.getName(), attacker.getName())) {
             scores[0]++;
         } else {
-            assert player2.getName().equals(attacker.getName());
             scores[1]++;
         }
         new MatchScoreUpdatingTask(
@@ -45,6 +46,8 @@ public class BattleHandler {
                 scores[0],
                 scores[1]
         ).runTaskAsynchronously(BalkouraBattle.getInstance());
+        System.out.println("death renew match");
+        renewMatch(match, player1, player2);
     }
 
     /**
@@ -54,9 +57,10 @@ public class BattleHandler {
      * @param disconnected The player who have disconnecting when fighting.
      * @param opponent     The opponent of the player who disconnecting.
      */
-    public static void handleDisconnect(Match match, Player disconnected, Player opponent) {
-        if (match.getUnderwayAt() != null)
-            ChatUtils.sendMessage(opponent, "Votre adversaire s'est déconnecté. Il peut revenir jusqu'à la fin du match ou vous serez désigné comme vainqueur.");
+    public static void handleDisconnect(Match match, OfflinePlayer disconnected, OfflinePlayer opponent) {
+        if (match.getUnderwayAt() == null) return;
+
+        ChatUtils.sendMessage(opponent, "Votre adversaire s'est déconnecté. Il peut revenir jusqu'à la fin du match ou vous serez désigné comme vainqueur.");
     }
 
     /**
@@ -67,9 +71,12 @@ public class BattleHandler {
      * @param player1 The first player of the match.
      * @param player2 The second player of the match.
      */
-    public static void handleConnect(Match match, Player player1, Player player2) {
-        if (match.getUnderwayAt() != null)
-            renewMatch(match, player1, player2);
+    public static void handleConnect(Match match, OfflinePlayer player1, OfflinePlayer player2) {
+        if (match.getUnderwayAt() == null) return;
+
+        ChatUtils.sendMessage(player1, "Votre adversaire s'est reconnecté, au combat !");
+        ChatUtils.sendMessage(player2, "Vous avez été téléporté à votre arène. Le combat continue !");
+        renewMatch(match, player1, player2);
     }
 
     /**
@@ -80,14 +87,10 @@ public class BattleHandler {
      * @param player1 The first player of the match.
      * @param player2 The second player of the match.
      */
-    public static void renewMatch(Match match, Player player1, Player player2) {
-        ChatUtils.sendMessage(player1, "Votre adversaire s'est reconnecté, au combat !");
-        ChatUtils.sendMessage(player2, "Vous avez été téléporté à votre arène. Le combat continue !");
+    public static void renewMatch(Match match, OfflinePlayer player1, OfflinePlayer player2) {
         Location[] locations = ArenaUtils.getArenaLocations(ArenaUtils.getArenaIdByMatchId(match.getId()));
-        CompletableFuture.allOf(
-                player1.teleportAsync(locations[0]),
-                player2.teleportAsync(locations[1])
-        );
+        new ParticipantTeleportingTask(player1, locations[0]);
+        new ParticipantTeleportingTask(player2, locations[1]);
     }
 
     /**

@@ -1,18 +1,16 @@
 package fr.romitou.balkourabattle.tasks;
 
-//import com.google.api.client.util.ArrayMap;
-
 import at.stefangeyer.challonge.exception.DataAccessException;
+import at.stefangeyer.challonge.model.enumeration.MatchState;
 import fr.romitou.balkourabattle.BalkouraBattle;
 import fr.romitou.balkourabattle.BattleHandler;
 import fr.romitou.balkourabattle.ChallongeManager;
 import fr.romitou.balkourabattle.utils.ArenaUtils;
+import fr.romitou.balkourabattle.utils.ChatUtils;
 import fr.romitou.balkourabattle.utils.MatchUtils;
 import org.bukkit.Location;
-import org.bukkit.entity.Player;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.scheduler.BukkitRunnable;
-
-import java.util.Arrays;
 
 public class ChallongeSyncTask extends BukkitRunnable {
 
@@ -24,16 +22,20 @@ public class ChallongeSyncTask extends BukkitRunnable {
         try {
             ChallongeManager.getChallonge().getMatches(ChallongeManager.getTournament()).forEach(match -> {
 
-                System.out.println("match round:" + match.getRound());
-
-                if (match.getUnderwayAt() != null) return; // The match is already marked as started.
+                if (!match.getRound().equals(BattleHandler.round))
+                    return; // The round doesn't match with actual.
+                if (match.getState() != MatchState.OPEN)
+                    return; // The match is already started, pending or finished.
+                if (match.getUnderwayAt() != null)
+                    return; // The match is already started as it was marked as underway.
                 if (ArenaUtils.getAvailableArenas().size() == 0)
                     return; // Don't continue if there is no arenas available.
 
-                Player[] players = MatchUtils.getPlayers(match);
-                System.out.println("players:" + Arrays.toString(players));
+                // Fetch players of this match.
+                OfflinePlayer[] players = MatchUtils.getPlayers(match);
                 assert players[0] != null && players[1] != null;
 
+                // Fetch a random arena and get locations of it.
                 int arena = ArenaUtils.getRandomAvailableArena();
                 BattleHandler.arenas.put(arena, match.getId());
                 Location[] locations = ArenaUtils.getArenaLocations(arena);
@@ -45,9 +47,22 @@ public class ChallongeSyncTask extends BukkitRunnable {
 
                 // Run an async task as this task can be asynchronous executed.
                 new MarkMatchAsUnderwayTask(match).runTaskAsynchronously(INSTANCE);
+                try {
+                    new ParticipantUpdateCurrentMatchTask(
+                            ChallongeManager.getChallonge().getParticipant(ChallongeManager.getTournament(), match.getPlayer1Id()),
+                            match
+                    ).runTaskAsynchronously(INSTANCE);
+                    new ParticipantUpdateCurrentMatchTask(
+                            ChallongeManager.getChallonge().getParticipant(ChallongeManager.getTournament(), match.getPlayer2Id()),
+                            match
+                    ).runTaskAsynchronously(INSTANCE);
+                } catch (DataAccessException e) {
+                    e.printStackTrace();
+                }
             });
         } catch (DataAccessException e) {
             e.printStackTrace();
+            ChatUtils.modAlert(e.getMessage());
         }
     }
 

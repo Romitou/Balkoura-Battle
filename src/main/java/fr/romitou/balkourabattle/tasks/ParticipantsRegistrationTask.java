@@ -21,6 +21,7 @@ public class ParticipantsRegistrationTask extends BukkitRunnable {
             ChallongeManager.getChallonge().getParticipants(ChallongeManager.getTournament()).forEach(participant -> registeredParticipants.put(participant.getName(), participant.getId()));
         } catch (DataAccessException e) {
             e.printStackTrace();
+            ChatUtils.modAlert(e.getMessage());
         }
         Bukkit.getServer().getOnlinePlayers().forEach(player -> {
             if (registeredParticipants.containsKey(player.getName())) {
@@ -42,6 +43,7 @@ public class ParticipantsRegistrationTask extends BukkitRunnable {
                 Thread.sleep(1000); // We wait one second in order to not surcharge Challonge's API.
             } catch (InterruptedException | DataAccessException e) {
                 e.printStackTrace();
+                ChatUtils.modAlert(e.getMessage());
             }
         });
         ChatUtils.broadcast("Les participants suivant sont inscrits pour ce tournois :");

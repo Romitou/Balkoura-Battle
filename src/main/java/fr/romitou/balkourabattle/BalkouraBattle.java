@@ -1,8 +1,8 @@
 package fr.romitou.balkourabattle;
 
-import at.stefangeyer.challonge.exception.DataAccessException;
 import fr.romitou.balkourabattle.commands.EventCommand;
 import fr.romitou.balkourabattle.tasks.ChallongeSyncTask;
+import fr.romitou.balkourabattle.tasks.TournamentFetchTask;
 import fr.romitou.balkourabattle.utils.ArenaUtils;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -31,6 +31,7 @@ public class BalkouraBattle extends JavaPlugin {
 
         // -- Tasks and events --
         new ChallongeSyncTask().runTaskTimerAsynchronously(this, 0, 200);
+        new TournamentFetchTask().runTaskAsynchronously(this);
         getServer().getPluginManager().registerEvents(new EventListener(), this);
 
         // -- Commands --
@@ -41,15 +42,5 @@ public class BalkouraBattle extends JavaPlugin {
         // -- Initialize BiMaps --
         ArenaUtils.init();
 
-        try {
-            ChallongeManager.setTournament(ChallongeManager
-                    .getChallonge()
-                    .getTournament(config.getString("challonge.tournament"))
-            );
-        } catch (DataAccessException e) {
-            getLogger().severe("The challonge tournament wasn't found. Disabling.");
-            e.printStackTrace();
-            getPluginLoader().disablePlugin(this);
-        }
     }
 }

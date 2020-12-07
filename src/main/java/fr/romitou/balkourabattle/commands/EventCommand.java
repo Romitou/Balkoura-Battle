@@ -3,12 +3,11 @@ package fr.romitou.balkourabattle.commands;
 import fr.romitou.balkourabattle.BalkouraBattle;
 import fr.romitou.balkourabattle.BattleHandler;
 import fr.romitou.balkourabattle.tasks.*;
-import fr.romitou.balkourabattle.utils.ArenaUtils;
 import fr.romitou.balkourabattle.utils.ChatUtils;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
-import org.bukkit.entity.Player;
 
 import javax.annotation.Nonnull;
 import java.util.List;
@@ -53,13 +52,9 @@ public class EventCommand implements TabExecutor {
                 BattleHandler.round = round;
                 ChatUtils.sendMessage(sender, "La manche a bien été définie à " + round + ".");
                 break;
-            case "loc":
-                ArenaUtils.setLocation(
-                        Integer.parseInt(args[1]),
-                        Integer.parseInt(args[2]),
-                        ((Player) sender).getLocation()
-                );
-                ChatUtils.sendMessage(sender, "Position enregistrée.");
+            case "info":
+            case "status":
+                new ParticipantMatchStatusTask((OfflinePlayer) sender).runTaskAsynchronously(INSTANCE);
                 break;
             case "debug":
                 ChatUtils.sendMessage(sender, "Round:" + BattleHandler.round);
