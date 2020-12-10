@@ -15,25 +15,22 @@ public class EventListener implements Listener {
 
     @EventHandler
     public void playerConnect(PlayerJoinEvent event) {
-        ChatUtils.broadcastConnection(event.getPlayer());
-        if (BattleHandler.players.containsValue(event.getPlayer().getName()))
+        if (BattleHandler.PARTICIPANTS.contains(BattleHandler.getParticipant(event.getPlayer().getName())))
             new ParticipantMatchCheckTask(event.getPlayer(), ParticipantMatchCheckType.CONNECTED).runTaskAsynchronously(INSTANCE);
     }
 
     @EventHandler
     public void playerDisconnect(PlayerQuitEvent event) {
         ChatUtils.broadcastDisconnection(event.getPlayer());
-        if (BattleHandler.players.containsValue(event.getPlayer().getName()))
+        if (BattleHandler.PARTICIPANTS.contains(BattleHandler.getParticipant(event.getPlayer().getName())))
             new ParticipantMatchCheckTask(event.getPlayer(), ParticipantMatchCheckType.DISCONNECTED).runTaskAsynchronously(INSTANCE);
     }
 
     @EventHandler
     public void playerDeath(PlayerDeathEvent event) {
-        event.setDeathMessage("");
-        System.out.println("death");
-        if (BattleHandler.players.containsValue(event.getEntity().getName()))
-            System.out.println("death ok");
-        new ParticipantMatchCheckTask(event.getEntity(), ParticipantMatchCheckType.DEATH).runTaskAsynchronously(INSTANCE);
+        event.setDeathMessage(""); // Cancel death message.
+        if (BattleHandler.PARTICIPANTS.contains(BattleHandler.getParticipant(event.getEntity().getName())))
+            new ParticipantMatchCheckTask(event.getEntity(), ParticipantMatchCheckType.DEATH).runTaskAsynchronously(INSTANCE);
     }
 
 }

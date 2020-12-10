@@ -1,25 +1,8 @@
 package fr.romitou.balkourabattle.utils;
 
 import at.stefangeyer.challonge.model.Match;
-import fr.romitou.balkourabattle.BattleHandler;
-import org.bukkit.OfflinePlayer;
 
 public class MatchUtils {
-
-    /**
-     * This method is useful to get players of a match, only with an JSONObject of it.
-     *
-     * @param match The JSONObject of the match.
-     * @return An Player array.
-     */
-    public static OfflinePlayer[] getPlayers(Match match) {
-        long firstId = match.getPlayer1Id();
-        long secondId = match.getPlayer2Id();
-        return new OfflinePlayer[]{
-                BattleHandler.getPlayer(firstId),
-                BattleHandler.getPlayer(secondId)
-        };
-    }
 
     /**
      * This method is useful to retrieve scores of a match.
@@ -29,7 +12,7 @@ public class MatchUtils {
      */
     public static Integer[] getScores(Match match) {
         String csvScores = match.getScoresCsv();
-        if (csvScores.equals("")) csvScores = "0-0";
+        if (csvScores.equals("")) csvScores = "0-0-0-0-0-0";
         String[] scores = csvScores.split("-");
         return new Integer[]{
                 Integer.parseInt(scores[0]),

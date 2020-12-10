@@ -1,8 +1,8 @@
 package fr.romitou.balkourabattle.utils;
 
+import net.md_5.bungee.api.chat.TextComponent;
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.Bukkit;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
@@ -17,11 +17,16 @@ public class ChatUtils {
         return PREFIX + StringUtils.join(text, "");
     }
 
-    public static void sendBeautifulMessage(OfflinePlayer player, String... strings) {
-        if (!player.isOnline()) return;
-        player.getPlayer().sendMessage(SPACED_DELIMITER);
-        player.getPlayer().sendMessage(strings);
-        player.getPlayer().sendMessage(SPACED_DELIMITER);
+    public static void sendBeautifulMessage(Player player, TextComponent... textComponents) {
+        player.sendMessage(SPACED_DELIMITER);
+        player.sendMessage(textComponents);
+        player.sendMessage(SPACED_DELIMITER);
+    }
+
+    public static void sendBeautifulMessage(Player player, String... strings) {
+        player.sendMessage(SPACED_DELIMITER);
+        player.sendMessage(strings);
+        player.sendMessage(SPACED_DELIMITER);
     }
 
     /**
@@ -42,16 +47,6 @@ public class ChatUtils {
      */
     public static void sendMessage(Player player, String... strings) {
         player.sendMessage(getFormattedMessage(strings));
-    }
-
-    /**
-     * This method is useful to send a pre-formatted message to a player.
-     *
-     * @param player  The player.
-     * @param strings The message.
-     */
-    public static void sendMessage(OfflinePlayer player, String... strings) {
-        if (player.isOnline()) player.getPlayer().sendMessage(getFormattedMessage(strings));
     }
 
     public static void broadcast(String... strings) {

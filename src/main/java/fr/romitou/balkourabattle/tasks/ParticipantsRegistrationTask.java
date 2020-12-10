@@ -25,10 +25,10 @@ public class ParticipantsRegistrationTask extends BukkitRunnable {
         }
         Bukkit.getServer().getOnlinePlayers().forEach(player -> {
             if (registeredParticipants.containsKey(player.getName())) {
-                BattleHandler.players.put(registeredParticipants.get(player.getName()), player.getName());
+                BattleHandler.PARTICIPANTS.add(BattleHandler.getParticipant(player.getName()));
                 ChatUtils.sendMessage(player, "Vous êtes inscrit pour ce tournois. Préparez-vous !");
             }
-            if (BattleHandler.players.containsValue(player.getName()))
+            if (BattleHandler.getParticipant(player.getName()) != null)
                 return;
             ParticipantQuery participantQuery = ParticipantQuery.builder()
                     .name(player.getName())
@@ -38,7 +38,7 @@ public class ParticipantsRegistrationTask extends BukkitRunnable {
                         ChallongeManager.getTournament(),
                         participantQuery
                 );
-                BattleHandler.players.put(participant.getId(), player.getName());
+                BattleHandler.PARTICIPANTS.add(participant);
                 ChatUtils.sendMessage(player, "Vous êtes inscrit pour ce tournois. Préparez-vous !");
                 Thread.sleep(1000); // We wait one second in order to not surcharge Challonge's API.
             } catch (InterruptedException | DataAccessException e) {
@@ -47,7 +47,7 @@ public class ParticipantsRegistrationTask extends BukkitRunnable {
             }
         });
         ChatUtils.broadcast("Les participants suivant sont inscrits pour ce tournois :");
-        ChatUtils.broadcast(StringUtils.join(BattleHandler.players.values(), ", "));
+        ChatUtils.broadcast(StringUtils.join(BattleHandler.PARTICIPANTS, ", "));
         ChatUtils.broadcast("Que le meilleur gagne !");
     }
 }

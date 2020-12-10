@@ -1,52 +1,64 @@
 package fr.romitou.balkourabattle;
 
 import at.stefangeyer.challonge.model.Match;
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
+import at.stefangeyer.challonge.model.Participant;
+import at.stefangeyer.challonge.model.enumeration.MatchState;
 import fr.romitou.balkourabattle.tasks.MatchEndingTask;
 import fr.romitou.balkourabattle.tasks.MatchScoreUpdatingTask;
 import fr.romitou.balkourabattle.tasks.ParticipantTeleportingTask;
+import fr.romitou.balkourabattle.tasks.UnmarkMatchAsUnderwayTask;
 import fr.romitou.balkourabattle.utils.ArenaUtils;
 import fr.romitou.balkourabattle.utils.ChatUtils;
-import fr.romitou.balkourabattle.utils.MatchUtils;
+import fr.romitou.balkourabattle.utils.MatchScore;
+import net.md_5.bungee.api.chat.ClickEvent;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Objects;
+import java.util.*;
 
 public class BattleHandler {
 
-    public static final BiMap<Long, String> players = HashBiMap.create();
-    public static final HashMap<Integer, Long> arenas = new HashMap<>();
+    public static final Set<Participant> PARTICIPANTS = new HashSet<>();
+    public static final HashMap<Integer, Long> ARENAS = new HashMap<>();
     public static Integer round = 0;
+
+    public static Participant getParticipant(String name) {
+        return PARTICIPANTS.stream()
+                .filter(participant -> participant.getName().equals(name))
+                .findFirst()
+                .orElse(null);
+    }
 
     @SuppressWarnings("deprecation")
     public static OfflinePlayer getPlayer(Long id) {
-        if (!players.containsKey(id))
-            return null;
-        String player = players.get(id);
-        OfflinePlayer cache = Bukkit.getOfflinePlayerIfCached(player);
+        Optional<Participant> player = PARTICIPANTS.stream()
+                .filter(participant -> participant.getId().equals(id))
+                .findFirst();
+        if (!player.isPresent()) return null;
+        OfflinePlayer cache = Bukkit.getOfflinePlayerIfCached(player.get().getName());
         if (cache != null) return cache;
-        return Bukkit.getOfflinePlayer(player);
+        return Bukkit.getOfflinePlayer(player.get().getName());
     }
 
+    public static String getName(Long id) {
+        Optional<Participant> player = PARTICIPANTS.stream()
+                .filter(participant -> participant.getId().equals(id))
+                .findFirst();
+        if (!player.isPresent()) return "Inconnu";
+        return player.get().getName();
+    }
+
+    public static Boolean containsName(String name) {
+        return PARTICIPANTS.stream().anyMatch(participant -> participant.getName().equals(name));
+    }
+
+
     public static void handleDeath(Match match, OfflinePlayer player1, OfflinePlayer player2, OfflinePlayer attacker) {
-        Integer[] scores = MatchUtils.getScores(match);
-        System.out.println("scores:" + Arrays.toString(scores));
-        if (Objects.equals(player1.getName(), attacker.getName())) {
-            scores[0]++;
-        } else {
-            scores[1]++;
-        }
-        new MatchScoreUpdatingTask(
-                match,
-                scores[0],
-                scores[1]
-        ).runTaskAsynchronously(BalkouraBattle.getInstance());
-        System.out.println("death renew match");
+        MatchScore matchScore = new MatchScore(match.getScoresCsv());
+        matchScore.setWinnerSet(match.getRound(), Objects.equals(player1.getName(), attacker.getName()));
+        new MatchScoreUpdatingTask(match, matchScore).runTaskAsynchronously(BalkouraBattle.getInstance());
         renewMatch(match, player1, player2);
     }
 
@@ -59,8 +71,8 @@ public class BattleHandler {
      */
     public static void handleDisconnect(Match match, OfflinePlayer disconnected, OfflinePlayer opponent) {
         if (match.getUnderwayAt() == null) return;
-
-        ChatUtils.sendMessage(opponent, "Votre adversaire s'est déconnecté. Il peut revenir jusqu'à la fin du match ou vous serez désigné comme vainqueur.");
+        if (opponent.getPlayer() == null) return;
+        ChatUtils.sendMessage(opponent.getPlayer(), "Votre adversaire s'est déconnecté. Il peut revenir jusqu'à la fin du match ou vous serez désigné comme vainqueur.");
     }
 
     /**
@@ -74,8 +86,10 @@ public class BattleHandler {
     public static void handleConnect(Match match, OfflinePlayer player1, OfflinePlayer player2) {
         if (match.getUnderwayAt() == null) return;
 
-        ChatUtils.sendMessage(player1, "Votre adversaire s'est reconnecté, au combat !");
-        ChatUtils.sendMessage(player2, "Vous avez été téléporté à votre arène. Le combat continue !");
+        if (player1.getPlayer() != null)
+            ChatUtils.sendMessage(player1.getPlayer(), "Votre adversaire s'est reconnecté, au combat !");
+        if (player2.getPlayer() != null)
+            ChatUtils.sendMessage(player2.getPlayer(), "Vous avez été téléporté à votre arène. Le combat continue !");
         renewMatch(match, player1, player2);
     }
 
@@ -98,11 +112,44 @@ public class BattleHandler {
      *
      * @param match The identifier of the match.
      */
-    public static void handleEndMatch(Match match) {
-        Integer[] scores = MatchUtils.getScores(match);
-        if (scores[0] > scores[1])
-            new MatchEndingTask(match, match.getPlayer1Id()).runTaskAsynchronously(BalkouraBattle.getInstance());
-        else
-            new MatchEndingTask(match, match.getPlayer2Id()).runTaskAsynchronously(BalkouraBattle.getInstance());
+    public static void handleEndMatch(Match match, int round) {
+        MatchScore matchScore = new MatchScore(match.getScoresCsv());
+        if (match.getRound() >= 2) {
+            if (!(matchScore.getWinSets(true) == matchScore.getWinSets(false))) {
+                new MatchEndingTask(match, matchScore).runTaskAsynchronously(BalkouraBattle.getInstance());
+                return;
+            }
+        }
+        new UnmarkMatchAsUnderwayTask(match).runTaskAsynchronously(BalkouraBattle.getInstance());
+        matchRequest(match);
     }
+
+    public static void matchRequest(Match match) {
+        List<TextComponent> stringList = new LinkedList<>();
+        stringList.add(new TextComponent("   §f§l» §eNouvelle demande de match :"));
+        MatchScore scores = new MatchScore(match.getScoresCsv());
+        stringList.add(new TextComponent(""));
+        stringList.add(new TextComponent("   §e● §fMatch " + match.getIdentifier() + " :"));
+        stringList.add(new TextComponent("      §e› §7Set : " + match.getRound()));
+        stringList.add(new TextComponent("      §e› §7Status : " + (
+                (match.getState() == MatchState.COMPLETE)
+                        ? "§aTerminé"
+                        : (match.getState() == MatchState.OPEN
+                        || match.getState() == MatchState.PENDING)
+                        ? (match.getUnderwayAt() == null)
+                        ? "§eEn attente"
+                        : "§6En cours"
+                        : "§3Attente d'informations"
+        )));
+        TextComponent action = new TextComponent("§a[Arbitrer]");
+        action.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "battle accept " + match.getId()));
+        stringList.add(action);
+        long player1wins = scores.getWinSets(true);
+        long player2wins = scores.getWinSets(false);
+        stringList.add(new TextComponent("      §e› §7Joueur 1 : " + BattleHandler.getName(match.getPlayer1Id()) + " - " + player1wins + " set" + (player1wins > 1 ? "s" : "") + " gagné" + (player1wins > 1 ? "s" : "")));
+        stringList.add(new TextComponent("      §e› §7Joueur 2 : " + BattleHandler.getName(match.getPlayer2Id()) + " - " + player2wins + " set" + (player2wins > 1 ? "s" : "") + " gagné" + (player2wins > 1 ? "s" : "")));
+        Bukkit.getOnlinePlayers().stream().filter(player -> player.hasPermission(""))
+                .forEach(player -> ChatUtils.sendBeautifulMessage(player, stringList.toArray(new TextComponent[0])));
+    }
+
 }

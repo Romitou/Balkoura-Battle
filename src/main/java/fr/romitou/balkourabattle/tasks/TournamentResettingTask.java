@@ -11,7 +11,7 @@ public class TournamentResettingTask extends BukkitRunnable {
     @Override
     public void run() {
         try {
-            BattleHandler.players.clear();
+            BattleHandler.PARTICIPANTS.clear();
             ChallongeManager.getChallonge().resetTournament(ChallongeManager.getTournament());
         } catch (DataAccessException e) {
             e.printStackTrace();

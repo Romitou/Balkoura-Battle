@@ -4,10 +4,10 @@ import fr.romitou.balkourabattle.BalkouraBattle;
 import fr.romitou.balkourabattle.BattleHandler;
 import fr.romitou.balkourabattle.tasks.*;
 import fr.romitou.balkourabattle.utils.ChatUtils;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
+import org.bukkit.entity.Player;
 
 import javax.annotation.Nonnull;
 import java.util.List;
@@ -54,12 +54,18 @@ public class EventCommand implements TabExecutor {
                 break;
             case "info":
             case "status":
-                new ParticipantMatchStatusTask((OfflinePlayer) sender).runTaskAsynchronously(INSTANCE);
+                new ParticipantMatchStatusTask((Player) sender).runTaskAsynchronously(INSTANCE);
                 break;
             case "debug":
                 ChatUtils.sendMessage(sender, "Round:" + BattleHandler.round);
-                ChatUtils.sendMessage(sender, "Players:" + BattleHandler.players.toString());
-                ChatUtils.sendMessage(sender, "Arenas:" + BattleHandler.arenas.toString());
+                ChatUtils.sendMessage(sender, "Players:" + BattleHandler.PARTICIPANTS.toString());
+                ChatUtils.sendMessage(sender, "Arenas:" + BattleHandler.ARENAS.toString());
+                break;
+            case "accept":
+                if (args[1] == null)
+                    break;
+                long id = Long.getLong(args[1]);
+                new MatchRequestCallbackTask((Player) sender, id).runTaskAsynchronously(INSTANCE);
                 break;
             default:
                 ChatUtils.sendMessage(sender, "Commande inconnue.");

@@ -26,37 +26,32 @@ public class ParticipantMatchCheckTask extends BukkitRunnable {
 
     @Override
     public void run() {
-        long playerId = BattleHandler.players.inverse().get(player.getName());
-        System.out.println("playerid:" + playerId);
-        Participant participant;
+        Participant participant = BattleHandler.getParticipant(player.getName());
         Match match = null;
-        OfflinePlayer[] players = null;
         try {
-            participant = ChallongeManager.getChallonge().getParticipant(
-                    ChallongeManager.getTournament(),
-                    playerId
-            );
             match = ChallongeManager.getChallonge().getMatch(
                     ChallongeManager.getTournament(),
                     Long.parseLong(participant.getMisc())
             );
-            players = MatchUtils.getPlayers(match);
         } catch (DataAccessException e) {
             e.printStackTrace();
             ChatUtils.modAlert(e.getMessage());
         }
-        assert players != null;
+        assert match != null;
+        OfflinePlayer player1 = BattleHandler.getPlayer(match.getPlayer1Id());
+        OfflinePlayer player2 = BattleHandler.getPlayer(match.getPlayer2Id());
+        assert player1 != null && player2 != null;
         switch (checkType) {
             case DISCONNECTED:
-                if (Objects.equals(players[0].getName(), player.getName()))
-                    BattleHandler.handleDisconnect(match, players[0], players[1]);
-                BattleHandler.handleDisconnect(match, players[1], players[0]);
+                if (Objects.equals(player1.getName(), player.getName()))
+                    BattleHandler.handleDisconnect(match, player1, player2);
+                BattleHandler.handleDisconnect(match, player2, player1);
                 break;
             case CONNECTED:
-                BattleHandler.handleConnect(match, players[0], players[1]);
+                BattleHandler.handleConnect(match, player1, player2);
                 break;
             case DEATH:
-                BattleHandler.handleDeath(match, players[0], players[1], player);
+                BattleHandler.handleDeath(match, player1, player2, player);
                 break;
             default:
                 ChatUtils.modAlert("Invalid check type for player" + player.getName() + ": " + checkType.toString());

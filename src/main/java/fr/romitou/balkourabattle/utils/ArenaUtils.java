@@ -14,7 +14,7 @@ public class ArenaUtils {
     private final static Random RANDOM = new Random();
 
     public static Integer getArenaIdByMatchId(Long matchId) {
-        return JavaUtils.getKeyByValue(BattleHandler.arenas, matchId);
+        return JavaUtils.getKeyByValue(BattleHandler.ARENAS, matchId);
     }
 
     /**
@@ -24,7 +24,7 @@ public class ArenaUtils {
      */
     public static List<Integer> getAvailableArenas() {
         List<Integer> list = new LinkedList<>();
-        BattleHandler.arenas.forEach((key, value) -> {
+        BattleHandler.ARENAS.forEach((key, value) -> {
             if (value == null) list.add(key);
         });
         return list;
@@ -48,10 +48,7 @@ public class ArenaUtils {
     public static void init() {
         ConfigurationSection config = BalkouraBattle.getConfigFile().getConfigurationSection("arenas");
         assert config != null;
-        config.getKeys(false).forEach(key -> {
-            System.out.println("config:" + key);
-            BattleHandler.arenas.put(Integer.valueOf(key), null);
-        });
+        config.getKeys(false).forEach(key -> BattleHandler.ARENAS.put(Integer.valueOf(key), null));
     }
 
     /**
@@ -62,12 +59,8 @@ public class ArenaUtils {
      */
     public static Location[] getArenaLocations(Integer arenaId) {
         return new Location[]{
-                BalkouraBattle
-                        .getConfigFile()
-                        .getLocation("arenas." + arenaId + ".location.1"),
-                BalkouraBattle
-                        .getConfigFile()
-                        .getLocation("arenas." + arenaId + ".location.2")
+                BalkouraBattle.getConfigFile().getLocation("arenas." + arenaId + ".location.1"),
+                BalkouraBattle.getConfigFile().getLocation("arenas." + arenaId + ".location.2")
         };
     }
 
@@ -79,9 +72,7 @@ public class ArenaUtils {
      * @param location The location of this position.
      */
     public static void setLocation(int arenaId, int pos, Location location) {
-        ConfigurationSection arenas = BalkouraBattle
-                .getConfigFile()
-                .getConfigurationSection("arenas");
+        ConfigurationSection arenas = BalkouraBattle.getConfigFile().getConfigurationSection("arenas");
         assert arenas != null;
         arenas.set(arenaId + ".location." + pos, location);
         BalkouraBattle.getInstance().saveConfig();

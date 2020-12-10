@@ -7,29 +7,30 @@ import fr.romitou.balkourabattle.BattleHandler;
 import fr.romitou.balkourabattle.ChallongeManager;
 import fr.romitou.balkourabattle.utils.ArenaUtils;
 import fr.romitou.balkourabattle.utils.ChatUtils;
-import fr.romitou.balkourabattle.utils.MatchUtils;
+import fr.romitou.balkourabattle.utils.MatchScore;
 import org.bukkit.scheduler.BukkitRunnable;
 
 public class MatchEndingTask extends BukkitRunnable {
 
     private final Match match;
-    private final long winnerId;
+    private final MatchScore matchScore;
 
-    public MatchEndingTask(Match match, long winnerId) {
+    public MatchEndingTask(Match match, MatchScore matchScore) {
         this.match = match;
-        this.winnerId = winnerId;
+        this.matchScore = matchScore;
     }
 
     @Override
     public void run() {
         try {
-            Integer[] scores = MatchUtils.getScores(match);
             MatchQuery matchQuery = MatchQuery.builder()
-                    .winnerId(winnerId)
-                    .scoresCsv(scores[0] + "-" + scores[1])
+                    .winnerId(matchScore.getWinSets(true) > matchScore.getWinSets(false)
+                            ? match.getPlayer1Id()
+                            : match.getPlayer2Id()
+                    ).scoresCsv(matchScore.getScoreCsv(match.getRound() == 3))
                     .build();
             ChallongeManager.getChallonge().updateMatch(match, matchQuery);
-            BattleHandler.arenas.remove(ArenaUtils.getArenaIdByMatchId(match.getId()));
+            BattleHandler.ARENAS.remove(ArenaUtils.getArenaIdByMatchId(match.getId()));
         } catch (DataAccessException e) {
             e.printStackTrace();
             ChatUtils.modAlert(e.getMessage());
