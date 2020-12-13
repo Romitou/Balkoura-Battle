@@ -10,44 +10,57 @@ import org.apache.commons.lang.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
 
 public class ParticipantsRegistrationTask extends BukkitRunnable {
 
     @Override
     public void run() {
-        HashMap<String, Long> registeredParticipants = new HashMap<>();
+        List<Participant> registeredParticipants = new LinkedList<>();
         try {
-            ChallongeManager.getChallonge().getParticipants(ChallongeManager.getTournament()).forEach(participant -> registeredParticipants.put(participant.getName(), participant.getId()));
+            registeredParticipants.addAll(ChallongeManager.getChallonge().getParticipants(ChallongeManager.getTournament()));
         } catch (DataAccessException e) {
             e.printStackTrace();
             ChatUtils.modAlert(e.getMessage());
         }
         Bukkit.getServer().getOnlinePlayers().forEach(player -> {
-            if (registeredParticipants.containsKey(player.getName())) {
-                BattleHandler.PARTICIPANTS.add(BattleHandler.getParticipant(player.getName()));
-                ChatUtils.sendMessage(player, "Vous êtes inscrit pour ce tournois. Préparez-vous !");
-            }
-            if (BattleHandler.getParticipant(player.getName()) != null)
-                return;
-            ParticipantQuery participantQuery = ParticipantQuery.builder()
-                    .name(player.getName())
-                    .build();
-            try {
-                Participant participant = ChallongeManager.getChallonge().addParticipant(
-                        ChallongeManager.getTournament(),
-                        participantQuery
-                );
-                BattleHandler.PARTICIPANTS.add(participant);
-                ChatUtils.sendMessage(player, "Vous êtes inscrit pour ce tournois. Préparez-vous !");
-                Thread.sleep(1000); // We wait one second in order to not surcharge Challonge's API.
-            } catch (InterruptedException | DataAccessException e) {
-                e.printStackTrace();
-                ChatUtils.modAlert(e.getMessage());
+            if (!BattleHandler.containsName(player.getName())) {
+                if (registeredParticipants.stream().anyMatch(elt -> elt.getName().equals(player.getName()))) {
+                    Optional<Participant> eltParticipant = registeredParticipants.stream()
+                            .filter(elt -> elt.getName().equals(player.getName()))
+                            .findFirst();
+                    if (eltParticipant.isPresent()) {
+                        BattleHandler.PARTICIPANTS.add(eltParticipant.get());
+                        ChatUtils.sendMessage(player, "Vous êtes inscrit pour ce tournois. Préparez-vous !");
+                    }
+                } else {
+                    ParticipantQuery participantQuery = ParticipantQuery.builder()
+                            .name(player.getName())
+                            .build();
+                    try {
+                        Participant participant = ChallongeManager.getChallonge().addParticipant(
+                                ChallongeManager.getTournament(),
+                                participantQuery
+                        );
+                        if (participant != null) {
+                            BattleHandler.PARTICIPANTS.add(participant);
+                            ChatUtils.sendMessage(player, "Vous êtes inscrit pour ce tournois. Préparez-vous !");
+                        }
+                        Thread.sleep(1000); // We wait one second in order to not surcharge Challonge's API.
+                    } catch (InterruptedException | DataAccessException e) {
+                        e.printStackTrace();
+                        ChatUtils.modAlert(e.getMessage());
+                    }
+                }
             }
         });
         ChatUtils.broadcast("Les participants suivant sont inscrits pour ce tournois :");
-        ChatUtils.broadcast(StringUtils.join(BattleHandler.PARTICIPANTS, ", "));
+        ChatUtils.broadcast(StringUtils.join(
+                BattleHandler.PARTICIPANTS.stream().map(Participant::getName).toArray(),
+                ", "
+        ));
         ChatUtils.broadcast("Que le meilleur gagne !");
     }
 }

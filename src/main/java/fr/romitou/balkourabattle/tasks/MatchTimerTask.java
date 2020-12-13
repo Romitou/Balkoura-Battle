@@ -3,6 +3,7 @@ package fr.romitou.balkourabattle.tasks;
 import at.stefangeyer.challonge.model.Match;
 import fr.romitou.balkourabattle.BattleHandler;
 import fr.romitou.balkourabattle.utils.ChatUtils;
+import fr.romitou.balkourabattle.utils.MatchScore;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -25,7 +26,7 @@ public class MatchTimerTask extends BukkitRunnable {
     @Override
     public void run() {
         if (time <= 0) {
-            BattleHandler.handleEndMatch(match, round);
+            BattleHandler.handleEndMatch(match);
             this.cancel();
         }
         if (player1.getPlayer() != null)

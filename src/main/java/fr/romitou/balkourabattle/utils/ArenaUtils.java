@@ -5,16 +5,19 @@ import fr.romitou.balkourabattle.BattleHandler;
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class ArenaUtils {
 
     private final static Random RANDOM = new Random();
 
     public static Integer getArenaIdByMatchId(Long matchId) {
-        return JavaUtils.getKeyByValue(BattleHandler.ARENAS, matchId);
+        Optional<Map.Entry<Integer, Long>> arena = BattleHandler.ARENAS.entrySet()
+                .stream()
+                .filter(entry -> entry.getValue().equals(matchId))
+                .findFirst();
+        return arena.map(Map.Entry::getKey).orElse(null);
     }
 
     /**
@@ -23,11 +26,11 @@ public class ArenaUtils {
      * @return A BiMap.
      */
     public static List<Integer> getAvailableArenas() {
-        List<Integer> list = new LinkedList<>();
-        BattleHandler.ARENAS.forEach((key, value) -> {
-            if (value == null) list.add(key);
-        });
-        return list;
+        return BattleHandler.ARENAS.entrySet()
+                .stream()
+                .filter(entry -> entry.getValue() != null)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
     }
 
     /**

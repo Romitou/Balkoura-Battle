@@ -6,6 +6,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
+import java.util.List;
+
 public class ChatUtils {
 
     private final static String PREFIX = "§6[§eBattle§6] §f";
@@ -17,9 +19,9 @@ public class ChatUtils {
         return PREFIX + StringUtils.join(text, "");
     }
 
-    public static void sendBeautifulMessage(Player player, TextComponent... textComponents) {
+    public static void sendBeautifulMessage(Player player, List<TextComponent> textComponents) {
         player.sendMessage(SPACED_DELIMITER);
-        player.sendMessage(textComponents);
+        textComponents.forEach(player::sendMessage);
         player.sendMessage(SPACED_DELIMITER);
     }
 

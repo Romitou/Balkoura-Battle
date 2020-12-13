@@ -23,7 +23,7 @@ public class MatchScoreUpdatingTask extends BukkitRunnable {
         try {
             ChallongeManager.getChallonge().updateMatch(
                     match,
-                    MatchQuery.builder().scoresCsv(scores.getScoreCsv(match.getRound() == 3)).build()
+                    MatchQuery.builder().scoresCsv(scores.getScoreCsv(match.getRound())).build()
             );
         } catch (DataAccessException e) {
             e.printStackTrace();

@@ -27,10 +27,9 @@ public class MatchEndingTask extends BukkitRunnable {
                     .winnerId(matchScore.getWinSets(true) > matchScore.getWinSets(false)
                             ? match.getPlayer1Id()
                             : match.getPlayer2Id()
-                    ).scoresCsv(matchScore.getScoreCsv(match.getRound() == 3))
+                    ).scoresCsv(matchScore.getScoreCsv(match.getRound()))
                     .build();
             ChallongeManager.getChallonge().updateMatch(match, matchQuery);
-            BattleHandler.ARENAS.remove(ArenaUtils.getArenaIdByMatchId(match.getId()));
         } catch (DataAccessException e) {
             e.printStackTrace();
             ChatUtils.modAlert(e.getMessage());

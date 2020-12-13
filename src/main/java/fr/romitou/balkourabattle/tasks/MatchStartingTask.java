@@ -32,6 +32,9 @@ public class MatchStartingTask extends BukkitRunnable {
         BattleHandler.ARENAS.put(arena, match.getId());
         Location[] locations = ArenaUtils.getArenaLocations(arena);
 
+        System.out.println("Arena found: " + arena);
+        System.out.println("Players: " + player1.getName() + ", " + player2.getName());
+
         // Run a sync tasks as Bukkit isn't async safe.
         new ParticipantTeleportingTask(player1, locations[0]).runTask(INSTANCE);
         new ParticipantTeleportingTask(player2, locations[1]).runTask(INSTANCE);

@@ -10,6 +10,7 @@ import org.bukkit.command.TabExecutor;
 import org.bukkit.entity.Player;
 
 import javax.annotation.Nonnull;
+import java.util.Arrays;
 import java.util.List;
 
 public class EventCommand implements TabExecutor {
@@ -54,7 +55,12 @@ public class EventCommand implements TabExecutor {
                 break;
             case "info":
             case "status":
-                new ParticipantMatchStatusTask((Player) sender).runTaskAsynchronously(INSTANCE);
+                if (args.length == 1) {
+                    new ParticipantMatchStatusTask((Player) sender).runTaskAsynchronously(INSTANCE);
+                    break;
+                }
+                int matchId = Integer.parseInt(args[1]);
+                new SendMatchInfoTask((Player) sender, matchId).runTaskAsynchronously(INSTANCE);
                 break;
             case "debug":
                 ChatUtils.sendMessage(sender, "Round:" + BattleHandler.round);
@@ -62,9 +68,10 @@ public class EventCommand implements TabExecutor {
                 ChatUtils.sendMessage(sender, "Arenas:" + BattleHandler.ARENAS.toString());
                 break;
             case "accept":
-                if (args[1] == null)
+                if (args.length >= 2 && args[1] == null)
                     break;
-                long id = Long.getLong(args[1]);
+                System.out.println(Arrays.toString(args));
+                long id = Integer.parseInt(args[1]);
                 new MatchRequestCallbackTask((Player) sender, id).runTaskAsynchronously(INSTANCE);
                 break;
             default:

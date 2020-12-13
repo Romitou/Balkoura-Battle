@@ -6,7 +6,6 @@ import at.stefangeyer.challonge.model.Participant;
 import fr.romitou.balkourabattle.BattleHandler;
 import fr.romitou.balkourabattle.ChallongeManager;
 import fr.romitou.balkourabattle.utils.ChatUtils;
-import fr.romitou.balkourabattle.utils.MatchUtils;
 import fr.romitou.balkourabattle.utils.ParticipantMatchCheckType;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
