@@ -39,13 +39,13 @@ public class MatchScore {
     }
 
     public void setWinnerSet(int set, boolean isPlayer1) {
-        scores[set - 1][isPlayer1 ? 0 : 1] = 1;
+        scores[set][isPlayer1 ? 0 : 1] = 1;
     }
 
     public MatchSet getSet(int set) {
-        if (set - 1 > scores.length)
+        if (set > scores.length)
             throw new MalformedParametersException();
-        return new MatchSet(scores[set - 1]);
+        return new MatchSet(scores[set]);
     }
 
     public long getWinSets(boolean isPlayer1) {
@@ -55,24 +55,10 @@ public class MatchScore {
 
     public String getScoreCsv(int maxSet) {
         List<String> list = new LinkedList<>();
-        for (int i = 0; i < maxSet; i++) list.add(getSet(i).getScore(1) + "-" + getSet(i).getScore(2));
+        for (int i = 0; i < maxSet; i++) {
+            list.add((i < scores.length) ? (getSet(i).getScore(0) + "-" + getSet(i).getScore(1)) : ("0-0"));
+        }
         return StringUtils.join(list, ",");
-    }
-
-}
-
-class MatchSet {
-
-    private final Integer[] scores;
-
-    MatchSet(Integer[] scores) {
-        this.scores = scores;
-    }
-
-    int getScore(int score) {
-        if (score - 1 > scores.length)
-            throw new MalformedParametersException();
-        return scores[score - 1];
     }
 
 }
