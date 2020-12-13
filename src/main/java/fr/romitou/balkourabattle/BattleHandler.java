@@ -2,33 +2,32 @@ package fr.romitou.balkourabattle;
 
 import at.stefangeyer.challonge.model.Match;
 import at.stefangeyer.challonge.model.Participant;
-import at.stefangeyer.challonge.model.Tournament;
-import at.stefangeyer.challonge.model.enumeration.MatchState;
-import fr.romitou.balkourabattle.tasks.MatchEndingTask;
-import fr.romitou.balkourabattle.tasks.MatchScoreUpdatingTask;
-import fr.romitou.balkourabattle.tasks.ParticipantTeleportingTask;
-import fr.romitou.balkourabattle.tasks.UnmarkMatchAsUnderwayTask;
+import fr.romitou.balkourabattle.tasks.*;
 import fr.romitou.balkourabattle.utils.ArenaUtils;
+import fr.romitou.balkourabattle.utils.BalkouraUtils;
 import fr.romitou.balkourabattle.utils.ChatUtils;
 import fr.romitou.balkourabattle.utils.MatchScore;
 import net.md_5.bungee.api.chat.ClickEvent;
-import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
-import net.md_5.bungee.api.chat.hover.content.Content;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitScheduler;
 
 import java.util.*;
-import java.util.stream.Stream;
 
 public class BattleHandler {
 
     public static final List<Participant> PARTICIPANTS = new LinkedList<>();
     public static final HashMap<Integer, Long> ARENAS = new HashMap<>();
     public static final HashMap<Long, Integer> TASKS = new HashMap<>();
+    public static final HashMap<Long, Integer> MATCHES_ROUND = new HashMap<>();
+    public static final HashMap<Long, Long>
     public static Integer round = 0;
 
     public static Participant getParticipant(String name) {
@@ -43,7 +42,7 @@ public class BattleHandler {
         Optional<Participant> player = PARTICIPANTS.stream()
                 .filter(participant -> participant.getId().equals(id))
                 .findFirst();
-        if (!player.isPresent()) return null;
+        if (player.isEmpty()) return null;
         OfflinePlayer cache = Bukkit.getOfflinePlayerIfCached(player.get().getName());
         if (cache != null) return cache;
         return Bukkit.getOfflinePlayer(player.get().getName());
@@ -53,12 +52,27 @@ public class BattleHandler {
         Optional<Participant> player = PARTICIPANTS.stream()
                 .filter(participant -> participant.getId().equals(id))
                 .findFirst();
-        if (!player.isPresent()) return "Inconnu";
+        if (player.isEmpty()) return "Inconnu";
         return player.get().getName();
     }
 
     public static Boolean containsName(String name) {
         return PARTICIPANTS.stream().anyMatch(participant -> participant.getName().equals(name));
+    }
+
+    public static void setRound(long matchId, int round) {
+        BattleHandler.MATCHES_ROUND.put(matchId, round);
+    }
+
+    public static int getRound(long matchId) {
+        return Optional.ofNullable(BattleHandler.MATCHES_ROUND.get(matchId)).orElse(0);
+    }
+
+    public static void applyDeathMatch(OfflinePlayer player1, OfflinePlayer player2) {
+        if (player1.getPlayer() != null)
+            new PotionEffect(PotionEffectType.WITHER, 20, 1, true, false).apply(player1.getPlayer());
+        if (player2.getPlayer() != null)
+            new PotionEffect(PotionEffectType.WITHER, 20, 1, true, false).apply(player1.getPlayer());
     }
 
     public static void stopTimer(long matchId) {
@@ -75,9 +89,9 @@ public class BattleHandler {
     public static void handleDeath(Match match, OfflinePlayer player1, OfflinePlayer player2, OfflinePlayer attacker) {
         System.out.println("Handle death of player of match: " + match.getId());
         MatchScore matchScore = new MatchScore(match.getScoresCsv());
-        matchScore.setWinnerSet(match.getRound(), Objects.equals(player1.getName(), attacker.getName()));
+        matchScore.setWinnerSet(BattleHandler.getRound(match.getId()), Objects.equals(player1.getName(), attacker.getName()));
         new MatchScoreUpdatingTask(match, matchScore).runTaskAsynchronously(BalkouraBattle.getInstance());
-        match.setScoresCsv(matchScore.getScoreCsv(match.getRound()));
+        match.setScoresCsv(matchScore.getScoreCsv(BattleHandler.getRound(match.getId())));
         handleEndMatch(match);
     }
 
@@ -135,9 +149,11 @@ public class BattleHandler {
      */
     public static void handleEndMatch(Match match) {
         System.out.println("Handle ending match: " + match.getId());
+        BattleHandler.stopTimer(match.getId());
         BattleHandler.ARENAS.remove(ArenaUtils.getArenaIdByMatchId(match.getId()));
         MatchScore matchScore = new MatchScore(match.getScoresCsv());
-        if (match.getRound() >= 2) {
+        int round = BattleHandler.getRound(match.getId());
+        if (round >= 2) {
             System.out.println("Check for definitely ending match.");
             if (!(matchScore.getWinSets(true) == matchScore.getWinSets(false))) {
                 System.out.println("Stopping match...");
@@ -146,17 +162,18 @@ public class BattleHandler {
             }
             System.out.println("Nope.");
         }
-        new UnmarkMatchAsUnderwayTask(match).runTaskAsynchronously(BalkouraBattle.getInstance());
+        BattleHandler.setRound(match.getId(), round + 1);
+        new MatchRenewingTask(match).runTaskAsynchronously(BalkouraBattle.getInstance());
     }
 
     public static void matchRequest(List<Match> match) {
-        System.out.println("Handle match request for matches: " + match.stream().map(Match::getId));
+        System.out.println("Handle match request for matches: " + match);
         List<TextComponent> textComponents = new LinkedList<>();
-        textComponents.add(new TextComponent("   §f§l» §eDemandes de match :"));
+        textComponents.add(new TextComponent("   §f§l» §eMatchs en attente :"));
         textComponents.add(new TextComponent(""));
         match.forEach(m -> {
             TextComponent base = new TextComponent("   §e● §fMatch " + m.getIdentifier() + " §7| ");
-            TextComponent info = new TextComponent("§e[+ d'infos] ");
+            TextComponent info = new TextComponent("§6[+ d'infos] ");
             info.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/battle info " + m.getId()));
             base.addExtra(info);
             TextComponent accept = new TextComponent("§a[Accepter]");
@@ -164,8 +181,17 @@ public class BattleHandler {
             base.addExtra(accept);
             textComponents.add(base);
         });
-        Bukkit.getOnlinePlayers().stream().filter(player -> player.hasPermission("modo.event.pvp"))
-                .forEach(player -> ChatUtils.sendBeautifulMessage(player, textComponents));
+        BalkouraUtils.getOnlineModerators().forEach(player -> ChatUtils.sendBeautifulMessage(player, textComponents));
+    }
+
+    public static void initPlayer(OfflinePlayer player) {
+        if (player.getPlayer() != null) {
+            player.getPlayer().getInventory().setChestplate(new ItemStack(Material.IRON_CHESTPLATE));
+            player.getPlayer().getInventory().setItem(0, new ItemStack(Material.IRON_SWORD));
+            player.getPlayer().updateInventory();
+            player.getPlayer().setHealth(10);
+            player.getPlayer().setFoodLevel(10);
+        }
     }
 
 }

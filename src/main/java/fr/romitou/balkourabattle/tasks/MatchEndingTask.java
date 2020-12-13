@@ -27,7 +27,7 @@ public class MatchEndingTask extends BukkitRunnable {
                     .winnerId(matchScore.getWinSets(true) > matchScore.getWinSets(false)
                             ? match.getPlayer1Id()
                             : match.getPlayer2Id()
-                    ).scoresCsv(matchScore.getScoreCsv(match.getRound()))
+                    ).scoresCsv(matchScore.getScoreCsv(BattleHandler.getRound(match.getId())))
                     .build();
             ChallongeManager.getChallonge().updateMatch(match, matchQuery);
         } catch (DataAccessException e) {

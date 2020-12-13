@@ -3,6 +3,7 @@ package fr.romitou.balkourabattle.tasks;
 import at.stefangeyer.challonge.exception.DataAccessException;
 import at.stefangeyer.challonge.model.Match;
 import at.stefangeyer.challonge.model.query.MatchQuery;
+import fr.romitou.balkourabattle.BattleHandler;
 import fr.romitou.balkourabattle.ChallongeManager;
 import fr.romitou.balkourabattle.utils.ChatUtils;
 import fr.romitou.balkourabattle.utils.MatchScore;
@@ -23,7 +24,7 @@ public class MatchScoreUpdatingTask extends BukkitRunnable {
         try {
             ChallongeManager.getChallonge().updateMatch(
                     match,
-                    MatchQuery.builder().scoresCsv(scores.getScoreCsv(match.getRound())).build()
+                    MatchQuery.builder().scoresCsv(scores.getScoreCsv(BattleHandler.getRound(match.getId()))).build()
             );
         } catch (DataAccessException e) {
             e.printStackTrace();

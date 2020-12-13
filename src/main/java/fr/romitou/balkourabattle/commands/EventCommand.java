@@ -26,7 +26,7 @@ public class EventCommand implements TabExecutor {
         switch (args[0]) {
             case "init":
                 ChatUtils.sendMessage(sender, "Début de l'enregistrement des joueurs. Cela peut prendre un moment ...");
-                new ParticipantsRegistrationTask().runTaskAsynchronously(INSTANCE);
+                new ParticipantsRegistrationTask((Player) sender).runTaskAsynchronously(INSTANCE);
                 break;
             case "start":
                 new TournamentStartingTask().runTaskAsynchronously(INSTANCE);

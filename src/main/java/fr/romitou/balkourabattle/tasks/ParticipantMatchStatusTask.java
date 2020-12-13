@@ -44,7 +44,7 @@ public class ParticipantMatchStatusTask extends BukkitRunnable {
                 MatchScore scores = new MatchScore(match.getScoresCsv());
                 stringList.add("");
                 stringList.add("   §e● §fMatch " + match.getIdentifier() + " :");
-                stringList.add("      §e› §7Set : " + match.getRound());
+                stringList.add("      §e› §7Set : " + BattleHandler.getRound(match.getId()));
                 stringList.add("      §e› §7Status : " + (
                         (match.getState() == MatchState.COMPLETE)
                                 ? "§aTerminé"

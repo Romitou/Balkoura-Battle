@@ -21,7 +21,6 @@ public class EventListener implements Listener {
 
     @EventHandler
     public void playerDisconnect(PlayerQuitEvent event) {
-        ChatUtils.broadcastDisconnection(event.getPlayer());
         if (BattleHandler.PARTICIPANTS.contains(BattleHandler.getParticipant(event.getPlayer().getName())))
             new ParticipantMatchCheckTask(event.getPlayer(), ParticipantMatchCheckType.DISCONNECTED).runTaskAsynchronously(INSTANCE);
     }

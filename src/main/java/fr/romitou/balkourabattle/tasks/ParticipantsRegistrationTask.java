@@ -5,9 +5,9 @@ import at.stefangeyer.challonge.model.Participant;
 import at.stefangeyer.challonge.model.query.ParticipantQuery;
 import fr.romitou.balkourabattle.BattleHandler;
 import fr.romitou.balkourabattle.ChallongeManager;
+import fr.romitou.balkourabattle.utils.BalkouraUtils;
 import fr.romitou.balkourabattle.utils.ChatUtils;
-import org.apache.commons.lang.StringUtils;
-import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.LinkedList;
@@ -15,6 +15,12 @@ import java.util.List;
 import java.util.Optional;
 
 public class ParticipantsRegistrationTask extends BukkitRunnable {
+
+    private final Player player;
+
+    public ParticipantsRegistrationTask(Player player) {
+        this.player = player;
+    }
 
     @Override
     public void run() {
@@ -25,7 +31,7 @@ public class ParticipantsRegistrationTask extends BukkitRunnable {
             e.printStackTrace();
             ChatUtils.modAlert(e.getMessage());
         }
-        Bukkit.getServer().getOnlinePlayers().forEach(player -> {
+        BalkouraUtils.getAvailablePlayers().forEach(player -> {
             if (!BattleHandler.containsName(player.getName())) {
                 if (registeredParticipants.stream().anyMatch(elt -> elt.getName().equals(player.getName()))) {
                     Optional<Participant> eltParticipant = registeredParticipants.stream()
@@ -33,7 +39,7 @@ public class ParticipantsRegistrationTask extends BukkitRunnable {
                             .findFirst();
                     if (eltParticipant.isPresent()) {
                         BattleHandler.PARTICIPANTS.add(eltParticipant.get());
-                        ChatUtils.sendMessage(player, "Vous êtes inscrit pour ce tournois. Préparez-vous !");
+                        ChatUtils.sendMessage(player, "Vous avez été inscrit pour ce tournois !");
                     }
                 } else {
                     ParticipantQuery participantQuery = ParticipantQuery.builder()
@@ -46,7 +52,7 @@ public class ParticipantsRegistrationTask extends BukkitRunnable {
                         );
                         if (participant != null) {
                             BattleHandler.PARTICIPANTS.add(participant);
-                            ChatUtils.sendMessage(player, "Vous êtes inscrit pour ce tournois. Préparez-vous !");
+                            ChatUtils.sendMessage(player, "Vous avez été inscrit pour ce tournois !");
                         }
                         Thread.sleep(1000); // We wait one second in order to not surcharge Challonge's API.
                     } catch (InterruptedException | DataAccessException e) {
@@ -56,11 +62,6 @@ public class ParticipantsRegistrationTask extends BukkitRunnable {
                 }
             }
         });
-        ChatUtils.broadcast("Les participants suivant sont inscrits pour ce tournois :");
-        ChatUtils.broadcast(StringUtils.join(
-                BattleHandler.PARTICIPANTS.stream().map(Participant::getName).toArray(),
-                ", "
-        ));
-        ChatUtils.broadcast("Que le meilleur gagne !");
+        ChatUtils.sendMessage(player, "Participants enregistrés.");
     }
 }

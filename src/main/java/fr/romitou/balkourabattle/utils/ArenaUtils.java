@@ -13,11 +13,16 @@ public class ArenaUtils {
     private final static Random RANDOM = new Random();
 
     public static Integer getArenaIdByMatchId(Long matchId) {
-        Optional<Map.Entry<Integer, Long>> arena = BattleHandler.ARENAS.entrySet()
+        return BattleHandler.ARENAS.entrySet()
                 .stream()
-                .filter(entry -> entry.getValue().equals(matchId))
-                .findFirst();
-        return arena.map(Map.Entry::getKey).orElse(null);
+                .filter(entry -> {
+                    if (entry.getValue() != null)
+                        return entry.getValue().equals(matchId);
+                    return false;
+                })
+                .findFirst()
+                .map(Map.Entry::getKey)
+                .orElse(null);
     }
 
     /**
@@ -28,7 +33,7 @@ public class ArenaUtils {
     public static List<Integer> getAvailableArenas() {
         return BattleHandler.ARENAS.entrySet()
                 .stream()
-                .filter(entry -> entry.getValue() != null)
+                .filter(entry -> entry.getValue() == null)
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toList());
     }

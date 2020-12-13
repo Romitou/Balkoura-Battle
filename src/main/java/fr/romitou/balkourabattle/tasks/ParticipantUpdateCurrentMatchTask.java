@@ -20,8 +20,9 @@ public class ParticipantUpdateCurrentMatchTask extends BukkitRunnable {
 
     @Override
     public void run() {
+        System.out.println("set player match id: " + match.getId());
         ParticipantQuery participantQuery = ParticipantQuery.builder()
-                .misc(match.getId().toString())
+                .misc(String.valueOf(match.getId()))
                 .build();
         try {
             ChallongeManager.getChallonge().updateParticipant(participant, participantQuery);

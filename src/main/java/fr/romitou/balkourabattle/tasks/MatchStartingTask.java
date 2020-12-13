@@ -8,7 +8,9 @@ import fr.romitou.balkourabattle.ChallongeManager;
 import fr.romitou.balkourabattle.utils.ArenaUtils;
 import fr.romitou.balkourabattle.utils.ChatUtils;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 
 public class MatchStartingTask extends BukkitRunnable {
@@ -38,8 +40,6 @@ public class MatchStartingTask extends BukkitRunnable {
         // Run a sync tasks as Bukkit isn't async safe.
         new ParticipantTeleportingTask(player1, locations[0]).runTask(INSTANCE);
         new ParticipantTeleportingTask(player2, locations[1]).runTask(INSTANCE);
-        if (match.getRound() == 3)
-            new DeathMatchApplicationTask(player1, player2).runTask(INSTANCE);
         new MatchTimerTask(match, player1, player2, 30).runTaskTimer(INSTANCE, 0, 20);
 
         // Run an async task as this task can be asynchronous executed.
@@ -57,5 +57,10 @@ public class MatchStartingTask extends BukkitRunnable {
             e.printStackTrace();
             ChatUtils.modAlert(e.getMessage());
         }
+
+        BattleHandler.initPlayer(player1);
+        BattleHandler.initPlayer(player2);
+
     }
+
 }

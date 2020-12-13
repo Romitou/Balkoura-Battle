@@ -41,7 +41,7 @@ public class SendMatchInfoTask extends BukkitRunnable {
         List<String> stringList = new LinkedList<>();
         MatchScore scores = new MatchScore(match.getScoresCsv());
         stringList.add("   §f§l» §eInformations du match " + match.getIdentifier() + " :");
-        stringList.add("      §e› §7Set : " + match.getRound());
+        stringList.add("      §e› §7Set : " + BattleHandler.getRound(match.getId()));
         stringList.add("      §e› §7Status : " + (
                 (match.getState() == MatchState.COMPLETE)
                         ? "§aTerminé"

@@ -56,16 +56,7 @@ public class ChatUtils {
         Bukkit.getOnlinePlayers().forEach(player -> player.sendMessage(getFormattedMessage(strings)));
     }
 
-    public static void broadcastConnection(Player player) {
-        broadcast("§a[+]§f Bienvenue, §e" + player.getName() + "§f.");
-    }
-
-    public static void broadcastDisconnection(Player player) {
-        broadcast("§c[-]§f Au revoir, §e" + player.getName() + "§f.");
-    }
-
     public static void modAlert(String... strings) {
-        // Bukkit.broadcast(ERROR_PREFIX + StringUtils.join(strings), "modperm");
         broadcast(ERROR_PREFIX + StringUtils.join(strings));
     }
 

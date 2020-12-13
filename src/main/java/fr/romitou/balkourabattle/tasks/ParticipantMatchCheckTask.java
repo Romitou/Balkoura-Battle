@@ -27,10 +27,11 @@ public class ParticipantMatchCheckTask extends BukkitRunnable {
     public void run() {
         Participant participant = BattleHandler.getParticipant(player.getName());
         Match match = null;
+        System.out.println("debug misc: " + participant.getMisc());
         try {
             match = ChallongeManager.getChallonge().getMatch(
                     ChallongeManager.getTournament(),
-                    Long.parseLong(participant.getMisc())
+                    Integer.parseInt(participant.getMisc())
             );
         } catch (DataAccessException e) {
             e.printStackTrace();

@@ -3,6 +3,7 @@ package fr.romitou.balkourabattle.tasks;
 import at.stefangeyer.challonge.exception.DataAccessException;
 import at.stefangeyer.challonge.model.Match;
 import fr.romitou.balkourabattle.BalkouraBattle;
+import fr.romitou.balkourabattle.BattleHandler;
 import fr.romitou.balkourabattle.ChallongeManager;
 import fr.romitou.balkourabattle.utils.ChatUtils;
 import org.bukkit.entity.Player;
@@ -34,6 +35,7 @@ public class MatchRequestCallbackTask extends BukkitRunnable {
             ChatUtils.sendMessage(player, "Ce match a déjà été validé par un autre modérateur.");
             return;
         }
+        BattleHandler.setRound(match.getId(), 1);
         new MatchStartingTask(match).runTaskAsynchronously(BalkouraBattle.getInstance());
     }
 }
