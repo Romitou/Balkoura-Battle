@@ -1,4 +1,4 @@
-package fr.romitou.balkourabattle.utils;
+package fr.romitou.balkourabattle.elements;
 
 import java.lang.reflect.MalformedParametersException;
 

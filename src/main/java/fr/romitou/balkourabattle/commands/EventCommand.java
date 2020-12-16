@@ -1,9 +1,10 @@
 package fr.romitou.balkourabattle.commands;
 
 import fr.romitou.balkourabattle.BalkouraBattle;
-import fr.romitou.balkourabattle.BattleHandler;
+import fr.romitou.balkourabattle.BattleManager;
 import fr.romitou.balkourabattle.tasks.*;
 import fr.romitou.balkourabattle.utils.ChatUtils;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
@@ -19,11 +20,12 @@ public class EventCommand implements TabExecutor {
 
     @Override
     public boolean onCommand(@Nonnull CommandSender sender, @Nonnull Command command, @Nonnull String label, String[] args) {
-        if (args.length < 1 || args[0].equals("help")) {
-            ChatUtils.sendMessage(sender, "Commandes disponibles: §e/battle init§f.");
+        if (args.length < 1) {
+            ChatUtils.sendMessage(sender, "Commande invalide.");
             return false;
         }
         switch (args[0]) {
+            case "register":
             case "init":
                 ChatUtils.sendMessage(sender, "Début de l'enregistrement des joueurs. Cela peut prendre un moment ...");
                 new ParticipantsRegistrationTask((Player) sender).runTaskAsynchronously(INSTANCE);
@@ -50,22 +52,17 @@ public class EventCommand implements TabExecutor {
                     break;
                 }
                 int round = Integer.parseInt(args[1]);
-                BattleHandler.round = round;
+                BattleManager.round = round;
                 ChatUtils.sendMessage(sender, "La manche a bien été définie à " + round + ".");
                 break;
             case "info":
             case "status":
                 if (args.length == 1) {
-                    new ParticipantMatchStatusTask((Player) sender).runTaskAsynchronously(INSTANCE);
+                    // TODO: new ParticipantMatchStatusTask((Player) sender).runTaskAsynchronously(INSTANCE);
                     break;
                 }
                 int matchId = Integer.parseInt(args[1]);
-                new SendMatchInfoTask((Player) sender, matchId).runTaskAsynchronously(INSTANCE);
-                break;
-            case "debug":
-                ChatUtils.sendMessage(sender, "Round:" + BattleHandler.round);
-                ChatUtils.sendMessage(sender, "Players:" + BattleHandler.PARTICIPANTS.toString());
-                ChatUtils.sendMessage(sender, "Arenas:" + BattleHandler.ARENAS.toString());
+                BattleManager.sendMatchInfo((OfflinePlayer) sender, matchId);
                 break;
             case "accept":
                 if (args.length >= 2 && args[1] == null)

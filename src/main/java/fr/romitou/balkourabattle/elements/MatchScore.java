@@ -1,4 +1,4 @@
-package fr.romitou.balkourabattle.utils;
+package fr.romitou.balkourabattle.elements;
 
 import org.apache.commons.lang.StringUtils;
 
@@ -48,8 +48,12 @@ public class MatchScore {
         return new MatchSet(scores[set]);
     }
 
-    public long getWinSets(boolean isPlayer1) {
+    public int getRound() {
         System.out.println(Arrays.deepToString(scores));
+        return scores.length;
+    }
+
+    public long getWinSets(boolean isPlayer1) {
         return Arrays.stream(scores).filter(set -> set[isPlayer1 ? 0 : 1] == 1).count();
     }
 

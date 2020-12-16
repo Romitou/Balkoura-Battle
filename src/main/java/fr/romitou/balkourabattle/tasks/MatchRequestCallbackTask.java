@@ -1,10 +1,10 @@
 package fr.romitou.balkourabattle.tasks;
 
-import at.stefangeyer.challonge.exception.DataAccessException;
 import at.stefangeyer.challonge.model.Match;
 import fr.romitou.balkourabattle.BalkouraBattle;
-import fr.romitou.balkourabattle.BattleHandler;
-import fr.romitou.balkourabattle.ChallongeManager;
+import fr.romitou.balkourabattle.BattleManager;
+import fr.romitou.balkourabattle.elements.Arena;
+import fr.romitou.balkourabattle.elements.ArenaStatus;
 import fr.romitou.balkourabattle.utils.ChatUtils;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -12,30 +12,31 @@ import org.bukkit.scheduler.BukkitRunnable;
 public class MatchRequestCallbackTask extends BukkitRunnable {
 
     private final Player player;
-    private final Long id;
+    private final long matchId;
 
-    public MatchRequestCallbackTask(Player player, long id) {
+    public MatchRequestCallbackTask(Player player, long matchId) {
         this.player = player;
-        this.id = id;
+        this.matchId = matchId;
     }
 
     @Override
     public void run() {
-        Match match = null;
-        try {
-            match = ChallongeManager.getChallonge().getMatch(
-                    ChallongeManager.getTournament(),
-                    id
-            );
-        } catch (DataAccessException e) {
-            e.printStackTrace();
+        Match match = BattleManager.getMatch(matchId);
+        if (match == null) {
+            ChatUtils.sendMessage(player, "Ce match est introuvable (" + matchId + ").");
+            return;
         }
-        assert match != null;
         if (match.getUnderwayAt() != null) {
             ChatUtils.sendMessage(player, "Ce match a déjà été validé par un autre modérateur.");
             return;
         }
-        BattleHandler.setRound(match.getId(), 1);
-        new MatchStartingTask(match).runTaskAsynchronously(BalkouraBattle.getInstance());
+        Arena arena = BattleManager.getArenaByMatchId(match.getId());
+        if (arena == null || arena.getArenaStatus() != ArenaStatus.VALIDATING) {
+            ChatUtils.sendMessage(player, "L'arène associée à ce match ne peut plus être utilisée.");
+            BattleManager.arenas.remove(arena);
+            BattleManager.arenas.put(arena, null);
+            return;
+        }
+        new MatchStartingTask(match, arena).runTaskAsynchronously(BalkouraBattle.getInstance());
     }
 }

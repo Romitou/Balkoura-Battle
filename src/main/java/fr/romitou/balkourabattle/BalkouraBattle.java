@@ -1,9 +1,9 @@
 package fr.romitou.balkourabattle;
 
 import fr.romitou.balkourabattle.commands.EventCommand;
-import fr.romitou.balkourabattle.tasks.ChallongeSyncTask;
+import fr.romitou.balkourabattle.tasks.MatchesRequestTask;
+import fr.romitou.balkourabattle.tasks.MatchesSyncTask;
 import fr.romitou.balkourabattle.tasks.TournamentFetchTask;
-import fr.romitou.balkourabattle.utils.ArenaUtils;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -30,7 +30,8 @@ public class BalkouraBattle extends JavaPlugin {
         config = this.getConfig();
 
         // -- Tasks and events --
-        new ChallongeSyncTask().runTaskTimerAsynchronously(this, 0, 200);
+        new MatchesSyncTask().runTaskTimerAsynchronously(this, 0, 300);
+        new MatchesRequestTask().runTaskTimerAsynchronously(this, 0, 300);
         new TournamentFetchTask().runTaskAsynchronously(this);
         getServer().getPluginManager().registerEvents(new EventListener(), this);
 
@@ -39,8 +40,8 @@ public class BalkouraBattle extends JavaPlugin {
         assert battleCommand != null;
         battleCommand.setExecutor(new EventCommand());
 
-        // -- Initialize BiMaps --
-        ArenaUtils.init();
+        // -- Initialize arenas --
+        BattleManager.registerArenasFromConfig();
 
     }
 }
