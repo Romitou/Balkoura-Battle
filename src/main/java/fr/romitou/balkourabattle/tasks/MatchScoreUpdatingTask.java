@@ -6,7 +6,6 @@ import at.stefangeyer.challonge.model.query.MatchQuery;
 import fr.romitou.balkourabattle.BattleManager;
 import fr.romitou.balkourabattle.ChallongeManager;
 import fr.romitou.balkourabattle.elements.Arena;
-import org.bukkit.entity.Bat;
 import org.bukkit.scheduler.BukkitRunnable;
 
 public class MatchScoreUpdatingTask extends BukkitRunnable {

@@ -3,6 +3,7 @@ package fr.romitou.balkourabattle;
 import at.stefangeyer.challonge.model.Match;
 import at.stefangeyer.challonge.model.Participant;
 import at.stefangeyer.challonge.model.enumeration.MatchState;
+import at.stefangeyer.challonge.model.enumeration.TournamentState;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import fr.romitou.balkourabattle.elements.Arena;
@@ -28,8 +29,8 @@ public class BattleManager {
     public static List<OfflinePlayer> freeze = new ArrayList<>();
     public static HashMap<Arena, Match> arenas = new HashMap<>();
     public static HashMap<Match, Integer> timers = new HashMap<>();
-    public static BiMap<Participant, OfflinePlayer> registeredParticipants = HashBiMap.create();
-    public static int round;
+    public static HashMap<Match, Integer> disconnections = new HashMap<>();
+    public static BiMap<Participant, UUID> registeredParticipants = HashBiMap.create();
 
     public static void registerArenasFromConfig() {
         ConfigurationSection config = BalkouraBattle.getConfigFile().getConfigurationSection("arenas");
@@ -43,6 +44,13 @@ public class BattleManager {
                 ArenaStatus.FREE,
                 config.getBoolean(key + ".isFinalArena") ? ArenaType.FINAL : ArenaType.CLASSIC
         ), null));
+    }
+
+    public static void stopDisconnectionTimer(Match match) {
+        int taskId = Optional.ofNullable(disconnections.get(match)).orElse(0);
+        if (taskId == 0) return;
+        Bukkit.getScheduler().cancelTask(taskId);
+        disconnections.remove(match);
     }
 
     public static void stopTimer(Match match) {
@@ -69,33 +77,11 @@ public class BattleManager {
                 .collect(Collectors.toList());
     }
 
-
-    public static Arena getArenaById(int arenaId) {
-        return arenas.entrySet()
-                .stream()
-                .filter(Objects::nonNull)
-                .filter(entry -> entry.getKey().getId() == arenaId)
-                .findFirst()
-                .map(Map.Entry::getKey)
-                .orElse(null);
-    }
-
     public static Arena getArenaByMatchId(long matchId) {
         return arenas.entrySet()
                 .stream()
                 .filter(Objects::nonNull)
                 .filter(entry -> entry.getValue().getId().equals(matchId))
-                .findFirst()
-                .map(Map.Entry::getKey)
-                .orElse(null);
-    }
-
-    public static Arena getCurrentArenaByPlayerId(long playerId) {
-        return arenas.entrySet()
-                .stream()
-                .filter(Objects::nonNull)
-                .filter(entry -> entry.getValue().getPlayer1Id().equals(playerId)
-                        || entry.getValue().getPlayer2Id().equals(playerId))
                 .findFirst()
                 .map(Map.Entry::getKey)
                 .orElse(null);
@@ -116,12 +102,6 @@ public class BattleManager {
                 .stream()
                 .filter(match -> match.getArenaStatus() == ArenaStatus.FREE)
                 .collect(Collectors.toList());
-    }
-
-    public static Arena getAvailableArena() {
-        List<Arena> arenas = getAvailableArenas();
-        if (arenas.size() == 0) return null;
-        return arenas.get(0);
     }
 
     public static Boolean containsName(String name) {
@@ -147,32 +127,29 @@ public class BattleManager {
                 .orElse(null);
     }
 
-    public static OfflinePlayer getPlayer(String name) {
-        return registeredParticipants.entrySet()
-                .stream()
-                .filter(entry -> entry.getKey().getName().equals(name))
-                .map(Map.Entry::getValue)
-                .findFirst()
-                .orElse(null);
-    }
 
     public static OfflinePlayer getPlayer(long participantId) {
-        return registeredParticipants.entrySet()
+        UUID uuid = registeredParticipants.entrySet()
                 .stream()
                 .filter(entry -> entry.getKey().getId().equals(participantId))
                 .map(Map.Entry::getValue)
                 .findFirst()
                 .orElse(null);
+        if (uuid == null) return null;
+        return getBukkitOfflinePlayer(uuid);
     }
 
-    @SuppressWarnings("deprecation")
-    public static OfflinePlayer getBukkitOfflinePlayer(String name) {
-        return Optional.ofNullable(Bukkit.getOfflinePlayerIfCached(name)).orElse(Bukkit.getOfflinePlayer(name));
+    public static OfflinePlayer getBukkitOfflinePlayer(UUID uuid) {
+        long now = System.currentTimeMillis();
+        OfflinePlayer offlinePlayer =  Bukkit.getOfflinePlayer(uuid);
+        System.out.println("Fetched " + offlinePlayer.getName() + " in " + (System.currentTimeMillis() - now) + "ms.");
+        return offlinePlayer;
     }
 
     public static String getDisplayedPlayerName(long participantId) {
         OfflinePlayer player = getPlayer(participantId);
-        return Optional.ofNullable(getPlayer(participantId).getName()).orElse("Inconnu");
+        if (player == null) return "Inconnu";
+        return Optional.ofNullable(player.getName()).orElse("Inconnu");
     }
 
     public static List<String> getDisplayedPlayersNames(Match match) {
@@ -202,12 +179,11 @@ public class BattleManager {
                 });
     }
 
-    public static List<Match> getMatches(long participantId) {
-        return arenas.values()
+    public static List<Match> getAllMatches(long participantId) {
+        return waitingMatches
                 .stream()
-                .filter(Objects::nonNull)
                 .filter(match -> match.getPlayer1Id().equals(participantId)
-                    || match.getPlayer2Id().equals(participantId))
+                        || match.getPlayer2Id().equals(participantId))
                 .collect(Collectors.toList());
     }
 
@@ -225,45 +201,22 @@ public class BattleManager {
                 .collect(Collectors.toList());
     }
 
-    public static Participant getParticipant(String name) {
-        return registeredParticipants.entrySet()
-                .stream()
-                .filter(entry -> entry.getValue().getName() != null
-                        && entry.getValue().getName().equals(name))
-                .map(Map.Entry::getKey)
-                .findFirst()
-                .orElse(null);
-    }
-
-    public static Participant getParticipant(OfflinePlayer offlinePlayer) {
-        return registeredParticipants.inverse().get(offlinePlayer);
+    public static Participant getParticipant(UUID uuid) {
+        return registeredParticipants.inverse().get(uuid);
     }
 
     public static void deathMatch(List<Player> players) {
         PotionEffect potionEffect = new PotionEffect(
                 PotionEffectType.WITHER,
-                0,
-                0,
+                30,
+                1,
                 false,
                 false
         );
         players.forEach(potionEffect::apply);
     }
 
-    public static void sendMatchInfo(OfflinePlayer offlinePlayer) {
-        if (offlinePlayer.getPlayer() == null) return;
-        Player player = offlinePlayer.getPlayer();
-        if (!BattleManager.containsName(player.getName())) {
-            ChatUtils.sendMessage(player, "Vous n'êtes pas enregistré à ce tournois.");
-            return;
-        }
-        Participant participant = getParticipant(offlinePlayer);
-        Match match = BattleManager.getCurrentMatchByPlayerId(participant.getId());
-        ChatUtils.sendBeautifulMessage(player, matchInfo(match).toArray(new String[0]));
-    }
-
-
-    public static void sendMatchInfo(OfflinePlayer offlinePlayer, int matchId) {
+    public static void sendMatchInfo(OfflinePlayer offlinePlayer, long matchId) {
         if (offlinePlayer.getPlayer() == null) return;
         Player player = offlinePlayer.getPlayer();
         Match match = BattleManager.getMatch(matchId);
@@ -271,12 +224,16 @@ public class BattleManager {
     }
 
     public static void sendParticipantMatchesInfo(Player player) {
-        Participant participant = getParticipant(player);
-        List<Match> matches = getMatches(participant.getId());
+        Participant participant = getParticipant(player.getUniqueId());
+        if (participant == null) {
+            ChatUtils.sendMessage(player, "Vous n'êtes pas inscrit pour participer à ce tournois.");
+            return;
+        }
+        List<Match> matches = getAllMatches(participant.getId());
         List<TextComponent> textComponents = new LinkedList<>();
         textComponents.add(new TextComponent("   §f§l» §eVos matchs :"));
         textComponents.add(new TextComponent(""));
-        if (matches == null) {
+        if (matches == null || matches.size() == 0) {
             textComponents.add(new TextComponent("   §fInformations non disponibles."));
             textComponents.add(new TextComponent("   §7Réessayez dans quelques instants."));
         } else {
@@ -287,8 +244,8 @@ public class BattleManager {
                     base.addExtra(info);
                     textComponents.add(base);
                 });
-            ChatUtils.sendBeautifulMessage(player, textComponents);
         }
+        ChatUtils.sendBeautifulMessage(player, textComponents);
     }
 
     public static List<String> matchInfo(Match match) {
@@ -349,6 +306,10 @@ public class BattleManager {
             allParticipants.forEach(participant -> stringList.add("   §e● §f " + participant.getName()));
         }
         ChatUtils.sendBeautifulMessage(player, stringList.toArray(new String[0]));
+    }
+
+    public static boolean isTournamentStarted() {
+        return ChallongeManager.getTournament().getState() == TournamentState.UNDERWAY;
     }
 
 }

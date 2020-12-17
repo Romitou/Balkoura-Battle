@@ -24,9 +24,10 @@ public class MatchTeleportingTask extends BukkitRunnable {
     public void run() {
         if (arena == null) arena = BattleManager.getArenaByMatchId(match.getId());
         List<OfflinePlayer> offlinePlayers = BattleManager.getPlayers(match);
-        offlinePlayers.stream()
-                .filter(player -> player.getPlayer() != null)
-                .forEach(player -> player.getPlayer().sendMessage(""));
+        if (offlinePlayers == null) {
+            // TODO: alert
+            return;
+        }
         Location[] locations = arena.getLocations();
         for (int i = 0; i < locations.length && i < offlinePlayers.size(); i++) {
             OfflinePlayer offlinePlayer = offlinePlayers.get(i);

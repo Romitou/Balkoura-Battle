@@ -14,13 +14,14 @@ public class MatchTimerTask extends BukkitRunnable {
 
     private final Match match;
     private final List<OfflinePlayer> offlinePlayers;
-    private int fightTime, idleTime;
+    private int fightTime, idleTime, endTime;
 
     public MatchTimerTask(Match match, int fightTime) {
         this.match = match;
         this.offlinePlayers = BattleManager.getPlayers(match);
         this.fightTime = fightTime;
         this.idleTime = 10;
+        this.endTime = 30;
     }
 
     @Override
@@ -32,14 +33,16 @@ public class MatchTimerTask extends BukkitRunnable {
                         .map(OfflinePlayer::getPlayer)
                         .filter(Objects::nonNull)
                         .collect(Collectors.toList()));
-                this.cancel();
+            } else {
+                if (fightTime == 60)
+                    BattleManager.freeze.removeAll(offlinePlayers);
+                offlinePlayers.stream()
+                        .filter(player -> player.getPlayer() != null)
+                        .forEach(player -> player.getPlayer().sendActionBar(ChatUtils.getFormattedMessage(
+                                "§cDeath match §fdans " + fightTime + " seconde" + (fightTime > 1 ? "s" : "")) + ".")
+                        );
+                fightTime--;
             }
-            offlinePlayers.stream()
-                    .filter(player -> player.getPlayer() != null)
-                    .forEach(player -> player.getPlayer().sendActionBar(ChatUtils.getFormattedMessage(
-                            "§cDeath match §fdans " + fightTime + " seconde" + (fightTime > 1 ? "s" : "")) + ".")
-                    );
-            fightTime--;
         } else {
             offlinePlayers.stream()
                     .filter(player -> player.getPlayer() != null)
@@ -47,8 +50,6 @@ public class MatchTimerTask extends BukkitRunnable {
                             "Début du combat dans " + idleTime + " seconde" + (fightTime > 1 ? "s" : "")) + ".")
                     );
             idleTime--;
-            if (idleTime <= 0)
-                BattleManager.freeze.removeAll(offlinePlayers);
         }
     }
 

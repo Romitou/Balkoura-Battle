@@ -1,9 +1,11 @@
 package fr.romitou.balkourabattle.commands;
 
 import fr.romitou.balkourabattle.BalkouraBattle;
-import fr.romitou.balkourabattle.BattleHandler;
 import fr.romitou.balkourabattle.BattleManager;
-import fr.romitou.balkourabattle.tasks.*;
+import fr.romitou.balkourabattle.tasks.MatchRequestCallbackTask;
+import fr.romitou.balkourabattle.tasks.ParticipantsRegistrationTask;
+import fr.romitou.balkourabattle.tasks.TournamentResettingTask;
+import fr.romitou.balkourabattle.tasks.TournamentStartingTask;
 import fr.romitou.balkourabattle.utils.ChatUtils;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
@@ -12,7 +14,6 @@ import org.bukkit.command.TabExecutor;
 import org.bukkit.entity.Player;
 
 import javax.annotation.Nonnull;
-import java.util.Arrays;
 import java.util.List;
 
 public class EventCommand implements TabExecutor {
@@ -65,6 +66,8 @@ public class EventCommand implements TabExecutor {
                 long id = Integer.parseInt(args[1]);
                 new MatchRequestCallbackTask((Player) sender, id).runTaskAsynchronously(INSTANCE);
                 break;
+            case "test":
+                break;
             default:
                 ChatUtils.sendMessage(sender, "Commande inconnue.");
                 return false;
@@ -78,7 +81,6 @@ public class EventCommand implements TabExecutor {
                 "register",
                 "start",
                 "announce",
-                "reset",
                 "finalize"
         );
     }

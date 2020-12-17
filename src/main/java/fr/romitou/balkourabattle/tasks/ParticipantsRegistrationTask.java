@@ -9,6 +9,8 @@ import fr.romitou.balkourabattle.utils.ChatUtils;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.util.UUID;
+
 public class ParticipantsRegistrationTask extends BukkitRunnable {
 
     private final Player player;
@@ -22,13 +24,11 @@ public class ParticipantsRegistrationTask extends BukkitRunnable {
         try {
             ChallongeManager.getChallonge().getParticipants(ChallongeManager.getTournament())
                     .stream()
-                    .filter(participant -> !BattleManager.registeredParticipants.containsKey(participant))
-                    .forEach(
-                    participant -> BattleManager.registeredParticipants.put(
+                    .filter(participant -> !BattleManager.containsName(participant.getName()))
+                    .forEach(participant -> BattleManager.registeredParticipants.put(
                             participant,
-                            BattleManager.getBukkitOfflinePlayer(participant.getName())
-                    )
-            );
+                            UUID.fromString(participant.getMisc())
+                    ));
         } catch (DataAccessException e) {
             e.printStackTrace();
             ChatUtils.modAlert(e.getMessage());
@@ -37,6 +37,7 @@ public class ParticipantsRegistrationTask extends BukkitRunnable {
             if (!BattleManager.containsName(player.getName())) {
                 ParticipantQuery participantQuery = ParticipantQuery.builder()
                         .name(player.getName())
+                        .misc(player.getUniqueId().toString())
                         .build();
                 try {
                     Participant participant = ChallongeManager.getChallonge().addParticipant(
@@ -44,7 +45,7 @@ public class ParticipantsRegistrationTask extends BukkitRunnable {
                             participantQuery
                     );
                     if (participant != null) {
-                        BattleManager.registeredParticipants.put(participant, player);
+                        BattleManager.registeredParticipants.put(participant, player.getUniqueId());
                         ChatUtils.sendMessage(player, "Vous avez été inscrit pour ce tournois !");
                     }
                     Thread.sleep(1000); // We wait one second in order to not surcharge Challonge's API.

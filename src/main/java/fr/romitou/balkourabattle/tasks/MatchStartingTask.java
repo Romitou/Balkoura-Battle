@@ -31,6 +31,9 @@ public class MatchStartingTask extends BukkitRunnable {
             return;
         }
 
+        // Send match informations.
+        offlinePlayers.forEach(player -> BattleManager.sendMatchInfo(player, match.getId()));
+
         BattleManager.arenas.remove(arena);
         arena.setArenaStatus(ArenaStatus.BUSY);
         BattleManager.arenas.put(arena, match);

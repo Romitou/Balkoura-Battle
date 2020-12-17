@@ -10,7 +10,6 @@ import fr.romitou.balkourabattle.elements.MatchScore;
 import fr.romitou.balkourabattle.utils.ChatUtils;
 import org.bukkit.GameMode;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.List;
@@ -19,6 +18,7 @@ import java.util.Objects;
 public class MatchStoppingTask extends BukkitRunnable {
 
     private final Match match;
+    private static Boolean isPlayer1;
 
     public MatchStoppingTask(Match match) {
         this.match = match;
@@ -28,7 +28,13 @@ public class MatchStoppingTask extends BukkitRunnable {
     public void run() {
         try {
             MatchScore matchScore = new MatchScore(match.getScoresCsv());
-            boolean isPlayer1 = matchScore.getWinSets(true) > matchScore.getWinSets(false);
+
+            // There scores are ex aequo. This can happen when a player disconnect and not reconnect, so we need
+            // to take the last set winner (as he doesn't disconnected).
+            if (matchScore.getWinSets(true) == matchScore.getWinSets(false))
+                isPlayer1 = matchScore.getSet(matchScore.getCurrentRound()).getScore(0) == 1;
+
+            isPlayer1 = matchScore.getWinSets(true) > matchScore.getWinSets(false);
             ChallongeManager.getChallonge().updateMatch(
                     match,
                     MatchQuery.builder()
@@ -49,6 +55,10 @@ public class MatchStoppingTask extends BukkitRunnable {
                 return;
             }
             OfflinePlayer loser = BattleManager.getPlayer(isPlayer1 ? match.getPlayer2Id() : match.getPlayer1Id());
+            if (loser == null) {
+                // TODO: alert
+                return;
+            }
             offlinePlayers.stream()
                     .filter(player -> player.getPlayer() != null)
                     .forEach(player -> ChatUtils.sendMessage(player.getPlayer(),
