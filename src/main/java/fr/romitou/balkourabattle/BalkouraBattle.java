@@ -3,6 +3,7 @@ package fr.romitou.balkourabattle;
 import fr.romitou.balkourabattle.commands.EventCommand;
 import fr.romitou.balkourabattle.tasks.MatchesRequestTask;
 import fr.romitou.balkourabattle.tasks.MatchesSyncTask;
+import fr.romitou.balkourabattle.tasks.MatchesUpdateTask;
 import fr.romitou.balkourabattle.tasks.TournamentFetchTask;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -30,8 +31,9 @@ public class BalkouraBattle extends JavaPlugin {
         config = this.getConfig();
 
         // -- Tasks and events --
-        new MatchesSyncTask().runTaskTimerAsynchronously(this, 0, 300);
-        new MatchesRequestTask().runTaskTimerAsynchronously(this, 0, 300);
+        new MatchesSyncTask().runTaskTimerAsynchronously(this, 300, 300);
+        new MatchesUpdateTask().runTaskTimerAsynchronously(this, 400, 300);
+        new MatchesRequestTask().runTaskTimerAsynchronously(this, 500, 300);
         new TournamentFetchTask().runTaskAsynchronously(this);
         getServer().getPluginManager().registerEvents(new EventListener(), this);
 

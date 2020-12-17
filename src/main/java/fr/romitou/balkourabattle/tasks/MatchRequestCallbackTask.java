@@ -21,7 +21,7 @@ public class MatchRequestCallbackTask extends BukkitRunnable {
 
     @Override
     public void run() {
-        Match match = BattleManager.getMatch(matchId);
+        Match match = BattleManager.getHandledMatch(matchId);
         if (match == null) {
             ChatUtils.sendMessage(player, "Ce match est introuvable (" + matchId + ").");
             return;

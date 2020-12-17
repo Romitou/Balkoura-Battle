@@ -10,21 +10,24 @@ import fr.romitou.balkourabattle.elements.ArenaStatus;
 import fr.romitou.balkourabattle.elements.ArenaType;
 import fr.romitou.balkourabattle.elements.MatchScore;
 import fr.romitou.balkourabattle.utils.ChatUtils;
+import net.md_5.bungee.api.chat.ClickEvent;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.*;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class BattleManager {
 
     public static List<Match> waitingMatches = new ArrayList<>();
-    public static BiMap<Arena, Match> arenas = HashBiMap.create();
+    public static List<OfflinePlayer> freeze = new ArrayList<>();
+    public static HashMap<Arena, Match> arenas = new HashMap<>();
+    public static HashMap<Match, Integer> timers = new HashMap<>();
     public static BiMap<Participant, OfflinePlayer> registeredParticipants = HashBiMap.create();
     public static int round;
 
@@ -42,9 +45,25 @@ public class BattleManager {
         ), null));
     }
 
+    public static void stopTimer(Match match) {
+        int taskId = Optional.ofNullable(timers.get(match)).orElse(0);
+        if (taskId == 0) return;
+        Bukkit.getScheduler().cancelTask(taskId);
+        timers.remove(match);
+    }
+
+    public static List<Match> getWaitingMatches() {
+        return waitingMatches.stream()
+                .filter(Objects::nonNull)
+                .filter(match -> match.getUnderwayAt() == null
+                        && match.getState() == MatchState.OPEN)
+                .collect(Collectors.toList());
+    }
+
     public static List<Match> getApprovalWaitingMatchs() {
         return arenas.entrySet()
                 .stream()
+                .filter(Objects::nonNull)
                 .filter(entry -> entry.getKey().getArenaStatus() == ArenaStatus.VALIDATING)
                 .map(Map.Entry::getValue)
                 .collect(Collectors.toList());
@@ -54,6 +73,7 @@ public class BattleManager {
     public static Arena getArenaById(int arenaId) {
         return arenas.entrySet()
                 .stream()
+                .filter(Objects::nonNull)
                 .filter(entry -> entry.getKey().getId() == arenaId)
                 .findFirst()
                 .map(Map.Entry::getKey)
@@ -63,6 +83,7 @@ public class BattleManager {
     public static Arena getArenaByMatchId(long matchId) {
         return arenas.entrySet()
                 .stream()
+                .filter(Objects::nonNull)
                 .filter(entry -> entry.getValue().getId().equals(matchId))
                 .findFirst()
                 .map(Map.Entry::getKey)
@@ -72,6 +93,7 @@ public class BattleManager {
     public static Arena getCurrentArenaByPlayerId(long playerId) {
         return arenas.entrySet()
                 .stream()
+                .filter(Objects::nonNull)
                 .filter(entry -> entry.getValue().getPlayer1Id().equals(playerId)
                         || entry.getValue().getPlayer2Id().equals(playerId))
                 .findFirst()
@@ -82,6 +104,7 @@ public class BattleManager {
     public static Match getCurrentMatchByPlayerId(long playerId) {
         return arenas.values()
                 .stream()
+                .filter(Objects::nonNull)
                 .filter(match -> match.getPlayer1Id().equals(playerId)
                         || match.getPlayer2Id().equals(playerId))
                 .findFirst()
@@ -108,8 +131,17 @@ public class BattleManager {
     }
 
     public static Match getMatch(long matchId) {
+        return waitingMatches.stream()
+                .filter(Objects::nonNull)
+                .filter(match -> match.getId().equals(matchId))
+                .findFirst()
+                .orElse(null);
+    }
+
+    public static Match getHandledMatch(long matchId) {
         return arenas.values()
                 .stream()
+                .filter(Objects::nonNull)
                 .filter(match -> match.getId().equals(matchId))
                 .findFirst()
                 .orElse(null);
@@ -124,37 +156,59 @@ public class BattleManager {
                 .orElse(null);
     }
 
-    public static OfflinePlayer getPlayer(long id) {
+    public static OfflinePlayer getPlayer(long participantId) {
         return registeredParticipants.entrySet()
                 .stream()
-                .filter(entry -> entry.getKey().getId().equals(id))
+                .filter(entry -> entry.getKey().getId().equals(participantId))
                 .map(Map.Entry::getValue)
                 .findFirst()
                 .orElse(null);
     }
 
-    public static List<OfflinePlayer> getPlayers(Match match) {
+    @SuppressWarnings("deprecation")
+    public static OfflinePlayer getBukkitOfflinePlayer(String name) {
+        return Optional.ofNullable(Bukkit.getOfflinePlayerIfCached(name)).orElse(Bukkit.getOfflinePlayer(name));
+    }
+
+    public static String getDisplayedPlayerName(long participantId) {
+        OfflinePlayer player = getPlayer(participantId);
+        return Optional.ofNullable(getPlayer(participantId).getName()).orElse("Inconnu");
+    }
+
+    public static List<String> getDisplayedPlayersNames(Match match) {
         return List.of(
-                getPlayer(match.getPlayer1Id()),
-                getPlayer(match.getPlayer2Id())
+                getDisplayedPlayerName(match.getPlayer1Id()),
+                getDisplayedPlayerName(match.getPlayer2Id())
         );
     }
 
-    public static String getDisplayName(OfflinePlayer player) {
-        if (player.getPlayer() != null) return player.getPlayer().getName();
-        return "Inconnu";
+    public static List<OfflinePlayer> getPlayers(Match match) {
+        OfflinePlayer player1 = getPlayer(match.getPlayer1Id());
+        OfflinePlayer player2 = getPlayer(match.getPlayer2Id());
+        if (player1 == null || player2 == null) return null;
+        return List.of(player1, player2);
     }
 
     public static void initPlayers(List<OfflinePlayer> offlinePlayers) {
         offlinePlayers.stream()
                 .filter(player -> player.getPlayer() != null)
                 .forEach(player -> {
+                    player.getPlayer().getInventory().clear();
                     player.getPlayer().getInventory().setChestplate(new ItemStack(Material.IRON_CHESTPLATE));
                     player.getPlayer().getInventory().setItem(0, new ItemStack(Material.IRON_SWORD));
                     player.getPlayer().updateInventory();
-                    player.getPlayer().setHealth(10);
-                    player.getPlayer().setFoodLevel(10);
+                    player.getPlayer().setHealth(20);
+                    player.getPlayer().setFoodLevel(20);
                 });
+    }
+
+    public static List<Match> getMatches(long participantId) {
+        return arenas.values()
+                .stream()
+                .filter(Objects::nonNull)
+                .filter(match -> match.getPlayer1Id().equals(participantId)
+                    || match.getPlayer2Id().equals(participantId))
+                .collect(Collectors.toList());
     }
 
     public static List<Player> getOnlineModerators() {
@@ -171,6 +225,31 @@ public class BattleManager {
                 .collect(Collectors.toList());
     }
 
+    public static Participant getParticipant(String name) {
+        return registeredParticipants.entrySet()
+                .stream()
+                .filter(entry -> entry.getValue().getName() != null
+                        && entry.getValue().getName().equals(name))
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .orElse(null);
+    }
+
+    public static Participant getParticipant(OfflinePlayer offlinePlayer) {
+        return registeredParticipants.inverse().get(offlinePlayer);
+    }
+
+    public static void deathMatch(List<Player> players) {
+        PotionEffect potionEffect = new PotionEffect(
+                PotionEffectType.WITHER,
+                0,
+                0,
+                false,
+                false
+        );
+        players.forEach(potionEffect::apply);
+    }
+
     public static void sendMatchInfo(OfflinePlayer offlinePlayer) {
         if (offlinePlayer.getPlayer() == null) return;
         Player player = offlinePlayer.getPlayer();
@@ -178,9 +257,8 @@ public class BattleManager {
             ChatUtils.sendMessage(player, "Vous n'êtes pas enregistré à ce tournois.");
             return;
         }
-        Participant participant = BattleManager.registeredParticipants.inverse().get(player);
+        Participant participant = getParticipant(offlinePlayer);
         Match match = BattleManager.getCurrentMatchByPlayerId(participant.getId());
-        matchInfo(match);
         ChatUtils.sendBeautifulMessage(player, matchInfo(match).toArray(new String[0]));
     }
 
@@ -189,23 +267,41 @@ public class BattleManager {
         if (offlinePlayer.getPlayer() == null) return;
         Player player = offlinePlayer.getPlayer();
         Match match = BattleManager.getMatch(matchId);
-        if (match == null) {
-            ChatUtils.sendMessage(player, "Aucun match n'a été trouvé avec cet identifiant.");
-        }
         ChatUtils.sendBeautifulMessage(player, matchInfo(match).toArray(new String[0]));
+    }
+
+    public static void sendParticipantMatchesInfo(Player player) {
+        Participant participant = getParticipant(player);
+        List<Match> matches = getMatches(participant.getId());
+        List<TextComponent> textComponents = new LinkedList<>();
+        textComponents.add(new TextComponent("   §f§l» §eVos matchs :"));
+        textComponents.add(new TextComponent(""));
+        if (matches == null) {
+            textComponents.add(new TextComponent("   §fInformations non disponibles."));
+            textComponents.add(new TextComponent("   §7Réessayez dans quelques instants."));
+        } else {
+            matches.forEach(match -> {
+                    TextComponent base = new TextComponent("   §e● §fMatch " + match.getIdentifier() + " §7| ");
+                    TextComponent info = new TextComponent("§6[+ d'infos] ");
+                    info.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/battle info " + match.getId()));
+                    base.addExtra(info);
+                    textComponents.add(base);
+                });
+            ChatUtils.sendBeautifulMessage(player, textComponents);
+        }
     }
 
     public static List<String> matchInfo(Match match) {
         List<String> stringList = new LinkedList<>();
-        stringList.add("   §f§l» §eVotre prochain match :");
+        stringList.add("   §f§l» §eInformations sur le match :");
+        stringList.add("");
         if (match == null) {
-            stringList.add("");
-            stringList.add("   §fAucun match prévu.");
+            stringList.add("   §fInformations non disponibles.");
+            stringList.add("   §7Réessayez dans quelques instants.");
         } else {
             MatchScore scores = new MatchScore(match.getScoresCsv());
-            stringList.add("");
             stringList.add("   §e● §fMatch " + match.getIdentifier() + " :");
-            stringList.add("      §e› §7Set : " + scores.getRound()); // TODO
+            stringList.add("      §e› §7Set : " + scores.getCurrentRound()); // TODO
             stringList.add("      §e› §7Status : " + (
                     (match.getState() == MatchState.COMPLETE)
                             ? "§aTerminé"
@@ -218,12 +314,41 @@ public class BattleManager {
             ));
             long player1wins = scores.getWinSets(true);
             long player2wins = scores.getWinSets(false);
-            List<OfflinePlayer> offlinePlayers = BattleManager.getPlayers(match);
-            stringList.add("      §e› §7Joueur 1 : " + BattleManager.getDisplayName(offlinePlayers.get(0)) + " - "
+            List<String> playersNames = BattleManager.getDisplayedPlayersNames(match);
+            stringList.add("      §e› §7Joueur 1 : " + playersNames.get(0) + " - "
                     + player1wins + " set" + (player1wins > 1 ? "s" : "") + " gagné" + (player1wins > 1 ? "s" : ""));
-            stringList.add("      §e› §7Joueur 2 : " + BattleManager.getDisplayName(offlinePlayers.get(1)) + " - "
+            stringList.add("      §e› §7Joueur 2 : " + playersNames.get(1) + " - "
                     + player2wins + " set" + (player2wins > 1 ? "s" : "") + " gagné" + (player2wins > 1 ? "s" : ""));
         }
         return stringList;
     }
+
+    public static void sendArenaInfos(Player player) {
+        Set<Arena> allArenas = arenas.keySet();
+        List<String> stringList = new LinkedList<>();
+        stringList.add("   §f§l» §eDisponibilité des arènes :");
+        stringList.add("");
+        if (allArenas.size() == 0) {
+            stringList.add("   §fAucune arène enregistrée.");
+            stringList.add("   §7Enregistrez-les dans le fichier de configuration.");
+        } else {
+            allArenas.forEach(arena -> stringList.add("   §e● §fArène " + arena.getId() + " §7| " + arena.getArenaStatus() + " §7| " + arena.getArenaType()));
+        }
+        ChatUtils.sendBeautifulMessage(player, stringList.toArray(new String[0]));
+    }
+
+    public static void sendParticipantInfos(Player player) {
+        Set<Participant> allParticipants = registeredParticipants.keySet();
+        List<String> stringList = new LinkedList<>();
+        stringList.add("   §f§l» §eParticipants enregistrés :");
+        stringList.add("");
+        if (allParticipants.size() == 0) {
+            stringList.add("   §fAucun participant enregistré.");
+            stringList.add("   §7Ajoutez-les via la commande /battle register.");
+        } else {
+            allParticipants.forEach(participant -> stringList.add("   §e● §f " + participant.getName()));
+        }
+        ChatUtils.sendBeautifulMessage(player, stringList.toArray(new String[0]));
+    }
+
 }

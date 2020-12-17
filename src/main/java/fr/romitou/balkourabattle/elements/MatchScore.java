@@ -2,14 +2,11 @@ package fr.romitou.balkourabattle.elements;
 
 import org.apache.commons.lang.StringUtils;
 
-import java.lang.reflect.MalformedParametersException;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 public class MatchScore {
 
-    private final Integer[][] scores;
+    private final ArrayList<Integer[]> scores = new ArrayList<>();
 
     public MatchScore(String scoreCsv) {
         if (scoreCsv.equals("")) scoreCsv = "0-0";
@@ -21,47 +18,61 @@ public class MatchScore {
             secondSet = splitScore[1].split("-");
         if (splitScore.length >= 3)
             thirdSet = splitScore[2].split("-");
-        this.scores = new Integer[splitScore.length][2];
-        this.scores[0] = new Integer[]{
+        this.scores.add(0, new Integer[]{
                 Integer.parseInt(firstSet[0]),
                 Integer.parseInt(firstSet[1])
-        };
+        });
         if (secondSet.length != 0)
-            this.scores[1] = new Integer[]{
+            this.scores.add(1, new Integer[]{
                     Integer.parseInt(secondSet[0]),
                     Integer.parseInt(secondSet[1]),
-            };
+            });
         if (thirdSet.length != 0)
-            this.scores[2] = new Integer[]{
+            this.scores.add(2, new Integer[]{
                     Integer.parseInt(thirdSet[0]),
                     Integer.parseInt(thirdSet[1]),
-            };
+            });
     }
 
     public void setWinnerSet(int set, boolean isPlayer1) {
-        scores[set][isPlayer1 ? 0 : 1] = 1;
+        if (set >= scores.size())
+            addRound();
+        Integer[] setScores = scores.get(set);
+        setScores[isPlayer1 ? 0 : 1] = 1;
+        scores.set(set, setScores);
     }
 
     public MatchSet getSet(int set) {
-        if (set > scores.length)
-            throw new MalformedParametersException();
-        return new MatchSet(scores[set]);
+        return new MatchSet(scores.get(set));
     }
 
-    public int getRound() {
-        System.out.println(Arrays.deepToString(scores));
-        return scores.length;
+    public int getCurrentRound() {
+        return scores.size() - 1;
+    }
+
+    public int getNextRound() {
+        return scores.size();
+    }
+
+    public void addRound() {
+        scores.add(new Integer[]{0, 0});
     }
 
     public long getWinSets(boolean isPlayer1) {
-        return Arrays.stream(scores).filter(set -> set[isPlayer1 ? 0 : 1] == 1).count();
+        return scores.stream().filter(scores -> scores[isPlayer1 ? 0 : 1] == 1).count();
     }
 
     public String getScoreCsv(int maxSet) {
         List<String> list = new LinkedList<>();
         for (int i = 0; i < maxSet; i++) {
-            list.add((i < scores.length) ? (getSet(i).getScore(0) + "-" + getSet(i).getScore(1)) : ("0-0"));
+            list.add((i < scores.size()) ? (getSet(i).getScore(0) + "-" + getSet(i).getScore(1)) : ("0-0"));
         }
+        return StringUtils.join(list, ",");
+    }
+
+    public String getScoreCsv() {
+        List<String> list = new LinkedList<>();
+        scores.forEach(set -> list.add(set[0] + "-" + set[1]));
         return StringUtils.join(list, ",");
     }
 
